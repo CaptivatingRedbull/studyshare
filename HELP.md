@@ -1,7 +1,7 @@
 # Read Me First
 The following was discovered as part of building this project:
 
-* The original package name 'java/de/StudyShare.studyshare' is invalid and this project uses 'java.de.StudyShare.studyshare' instead.
+* The original package name 'de/StudyShare.studyshare' is invalid and this project uses 'de.StudyShare.studyshare' instead.
 
 # Getting Started
 

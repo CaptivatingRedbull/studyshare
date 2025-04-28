@@ -8,7 +8,7 @@
 		<version>3.4.5</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>java.de.StudyShare</groupId>
+	<groupId>de.StudyShare</groupId>
 	<artifactId>studyshare</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>StudyShare</name>
