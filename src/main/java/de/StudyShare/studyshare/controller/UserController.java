@@ -30,9 +30,9 @@ public class UserController {
         return userService.getUsers();        
     }
     
-    @GetMapping("/{username}")
-    public List<UserDTO> getUserByUsername(@PathVariable String username) {
-        return userService.getUserByUsername(username);
+    @GetMapping("/{userName}")
+    public List<UserDTO> getUserByUserName(@PathVariable String userName) {
+        return userService.getUserByUserName(userName);
     }
 
     @DeleteMapping("/{id}")

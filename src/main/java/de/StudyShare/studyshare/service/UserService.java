@@ -35,8 +35,8 @@ public class UserService {
                 .toList();
     }
 
-    public List<UserDTO> getUserByUsername(String username) {
-        return userRepository.findByUsername(username).stream()
+    public List<UserDTO> getUserByUserName(String userName) {
+        return userRepository.findByUserName(userName).stream()
                 .map(userToUserDTO)
                 .toList();
     }
