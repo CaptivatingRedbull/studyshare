@@ -34,7 +34,7 @@ public class StudyShareApplication implements CommandLineRunner {
 		User user2 = new User("Maria", "Db", "maria.db@hotmail.com", "xxxxxxxxx", Role.ADMIN, "mariadb");
 		userRepository.saveAll(Arrays.asList(user1, user2));
 
-		// Fetch all cars and log to console
+		logger.info("Users loaded from database:");
 		for (User user : userRepository.findAll()) {
 			logger.info("FirstName: {}, LastName: {}", user.getFirstName(), user.getLastName());
 		}
