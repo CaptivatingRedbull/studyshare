@@ -20,7 +20,7 @@ public class UserService {
         user.getFirstName(),
         user.getLastName(),
         user.getEmail(),
-        user.getPasswortHash(),
+        user.getPasswordHash(),
         user.getRole(),
         user.getUserName()
     );

@@ -5,7 +5,7 @@ public record UserDTO(
     String firstName,
     String lastName,
     String email,
-    String passwortHash,
+    String passwordHash,
     Role role,
     String userName
 ) {}

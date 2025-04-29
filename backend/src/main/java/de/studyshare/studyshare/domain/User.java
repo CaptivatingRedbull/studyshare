@@ -17,20 +17,20 @@ public class User {
     @Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	private String firstName, lastName, email, passwortHash;
+	private String firstName, lastName, email, passwordHash;
 	private Role role;
 	private String userName;
 
-    @JsonIgnore // Quick and dirty ignoriert die LAZY Referenz
+    @JsonIgnore
 
 
     public User() {}
 
-    public User(String firstName, String lastName, String email, String passwortHash, Role role, String userName) {
+    public User(String firstName, String lastName, String email, String passwordHash, Role role, String userName) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
-        this.passwortHash = passwortHash;
+        this.passwordHash = passwordHash;
         this.role = role;
         this.userName = userName;
     }
@@ -66,12 +66,12 @@ public class User {
         this.email = email;
     }
 
-    public String getPasswortHash() {
-        return passwortHash;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setPasswortHash(String passwortHash) {
-        this.passwortHash = passwortHash;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public Role getRole() {
