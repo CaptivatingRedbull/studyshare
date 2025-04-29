@@ -1,4 +1,4 @@
-package de.StudyShare.studyshare;
+package de.studyshare.studyshare;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

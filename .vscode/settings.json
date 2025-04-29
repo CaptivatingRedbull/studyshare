@@ -3,5 +3,6 @@
     "java.compile.nullAnalysis.mode": "automatic",
     "cSpell.words": [
         "studyshare"
-    ]
+    ],
+    "deepscan.ignoreConfirmWarning": true
 }
