@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-StudyShareApplication<studyshare>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "de.studyshare.studyshare.StudyShareApplication",
+            "projectName": "studyshare",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
