@@ -7,9 +7,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
-
 @Entity
 public class Faculty {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -18,7 +18,7 @@ public class Faculty {
     @JsonIgnore
     public Faculty() {
     }
-    
+
     public Faculty(Long id, String name) {
         this.id = id;
         this.name = name;

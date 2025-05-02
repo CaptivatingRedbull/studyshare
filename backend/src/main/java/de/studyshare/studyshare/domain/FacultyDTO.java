@@ -1,6 +1,8 @@
 package de.studyshare.studyshare.domain;
 
 public record FacultyDTO(
-    Long id,
-    String name
-) {}
+        Long id,
+        String name
+        ) {
+
+}

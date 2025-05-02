@@ -1,6 +1,5 @@
 package de.studyshare.studyshare.domain;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;
@@ -9,22 +8,21 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-
-
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-	private String firstName, lastName, email, passwordHash;
-	private Role role;
-	private String userName;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String firstName, lastName, email, passwordHash;
+    private Role role;
+    private String userName;
 
     @JsonIgnore
 
-
-    public User() {}
+    public User() {
+    }
 
     public User(String firstName, String lastName, String email, String passwordHash, Role role, String userName) {
         this.firstName = firstName;
@@ -34,6 +32,7 @@ public class User {
         this.role = role;
         this.userName = userName;
     }
+
     public Long getId() {
         return id;
     }

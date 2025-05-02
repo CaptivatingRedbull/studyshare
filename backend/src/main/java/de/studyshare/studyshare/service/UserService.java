@@ -14,16 +14,17 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class UserService {
+
     private final UserRepository userRepository;
 
     private final Function<User, UserDTO> userToUserDTO = user -> new UserDTO(
-        user.getId(),
-        user.getFirstName(),
-        user.getLastName(),
-        user.getEmail(),
-        user.getPasswordHash(),
-        user.getRole(),
-        user.getUserName()
+            user.getId(),
+            user.getFirstName(),
+            user.getLastName(),
+            user.getEmail(),
+            user.getPasswordHash(),
+            user.getRole(),
+            user.getUserName()
     );
 
     public UserService(UserRepository userRepository) {

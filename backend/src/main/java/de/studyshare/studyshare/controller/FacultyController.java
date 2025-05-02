@@ -18,14 +18,15 @@ import de.studyshare.studyshare.service.FacultyService;
 @RestController
 @RequestMapping("/faculties")
 public class FacultyController {
+
     private final FacultyService facultyService;
 
-    public FacultyController(FacultyService facultyService){
+    public FacultyController(FacultyService facultyService) {
         this.facultyService = facultyService;
     }
 
     @GetMapping
-    public List<FacultyDTO> getFaculties(){
+    public List<FacultyDTO> getFaculties() {
         return facultyService.getFaculties();
     }
 
