@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import de.studyshare.studyshare.domain.Faculty;
 import de.studyshare.studyshare.domain.FacultyDTO;
 import de.studyshare.studyshare.repository.FacultyRepository;
+import jakarta.transaction.Transactional;
 
 @Service
 public class FacultyService {
@@ -24,6 +25,7 @@ public class FacultyService {
         this.facultyRepository = facultyRepository;
     }
 
+    @Transactional
     public List<FacultyDTO> getFaculties(){
         return facultyRepository.findAll()
                 .stream()

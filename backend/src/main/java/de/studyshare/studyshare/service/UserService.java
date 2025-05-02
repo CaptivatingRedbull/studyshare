@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import de.studyshare.studyshare.domain.User;
 import de.studyshare.studyshare.domain.UserDTO;
 import de.studyshare.studyshare.repository.UserRepository;
+import jakarta.transaction.Transactional;
 
 @Service
 public class UserService {
@@ -29,12 +30,14 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public List<UserDTO> getUsers() {
         return userRepository.findAll().stream()
                 .map(userToUserDTO)
                 .toList();
     }
 
+    @Transactional
     public List<UserDTO> getUserByUserName(String userName) {
         return userRepository.findByUserName(userName).stream()
                 .map(userToUserDTO)
@@ -46,7 +49,7 @@ public class UserService {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }
 
-    public ResponseEntity<?> deleteUser(long id) {
+    public ResponseEntity<?> deleteUser(Long id) {
         return userRepository.findById(id).map(user -> {
             userRepository.delete(user);
             return ResponseEntity.noContent().build();
