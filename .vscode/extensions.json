@@ -3,6 +3,8 @@
         "gruntfuggly.todo-tree",
         "vivaxy.vscode-conventional-commits",
         "vscjava.vscode-java-pack",
-        "vmware.vscode-boot-dev-pack"
+        "vmware.vscode-boot-dev-pack",
+        "bradlc.vscode-tailwindcss",
+        "csstools.postcss"
     ]
 }
