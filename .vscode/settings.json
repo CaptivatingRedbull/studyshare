@@ -4,5 +4,10 @@
     "cSpell.words": [
         "studyshare"
     ],
-    "deepscan.ignoreConfirmWarning": true
+    "deepscan.ignoreConfirmWarning": true,
+    "conventionalCommits.scopes": [
+        ".vscode",
+        "frontend",
+        "backend"
+    ]
 }
