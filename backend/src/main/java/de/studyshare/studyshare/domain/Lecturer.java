@@ -1,8 +1,10 @@
 package de.studyshare.studyshare.domain;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -70,6 +72,18 @@ public class Lecturer {
     public void removeCourse(Course course) {
         this.courses.remove(course);
         course.getLecturers().remove(this);
+    }
+
+    public LecturerDTO toDto() {
+        return new LecturerDTO(
+                this.id,
+                this.name,
+                this.courses == null
+                        ? Collections.emptySet()
+                        : this.courses.stream()
+                                .map(Course::getId)
+                                .collect(Collectors.toSet())
+        );
     }
 
     @Override

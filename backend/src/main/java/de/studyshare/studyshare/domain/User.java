@@ -88,4 +88,16 @@ public class User {
     public void setUserName(String userName) {
         this.userName = userName;
     }
+
+    public UserDTO toDto() {
+        return new UserDTO(
+                this.id,
+                this.firstName,
+                this.lastName,
+                this.email,
+                this.passwordHash,
+                this.role,
+                this.userName
+        );
+    }
 }

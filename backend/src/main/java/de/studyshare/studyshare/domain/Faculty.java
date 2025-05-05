@@ -39,4 +39,8 @@ public class Faculty {
     public void setName(String name) {
         this.name = name;
     }
+
+    public FacultyDTO toDto() {
+        return new FacultyDTO(this.id, this.name);
+    }
 }

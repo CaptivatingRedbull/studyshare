@@ -1,12 +1,9 @@
 package de.studyshare.studyshare.service;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +17,7 @@ import de.studyshare.studyshare.domain.Lecturer;
 import de.studyshare.studyshare.repository.CourseRepository;
 import de.studyshare.studyshare.repository.FacultyRepository;
 import de.studyshare.studyshare.repository.LecturerRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -28,13 +26,6 @@ public class CourseService {
     private final FacultyRepository facultyRepository;
     private final CourseRepository courseRepository;
     private final LecturerRepository lecturerRepository;
-
-    private final Function<Course, CourseDTO> courseToCourseDTO = course -> new CourseDTO(
-            course.getId(),
-            course.getName(),
-            course.getFaculty() != null
-            ? new FacultyDTO(course.getFaculty().getId(), course.getFaculty().getName()) : null,
-            course.getLecturers() != null ? course.getLecturers().stream().map(Lecturer::getId).collect(Collectors.toSet()) : Collections.emptySet());
 
     public CourseService(FacultyRepository facultyRepository,
             CourseRepository courseRepository,
@@ -46,12 +37,12 @@ public class CourseService {
 
     @Transactional
     public List<CourseDTO> getCourses() {
-        return courseRepository.findAll().stream().map(courseToCourseDTO).toList();
+        return courseRepository.findAll().stream().map(Course::toDto).toList();
     }
 
     @Transactional
     public CourseDTO getCourseById(Long id) {
-        return courseRepository.findById(id).map(courseToCourseDTO).orElse(null);
+        return courseRepository.findById(id).map(Course::toDto).orElse(null);
     }
 
     @Transactional
@@ -81,7 +72,7 @@ public class CourseService {
         return courseRepository.findById(courseId).map(course -> {
             var lectors = lecturerRepository.findAllById(lecturerIds);
             course.setLecturers(new HashSet<>(lectors));
-            var dto = courseToCourseDTO.apply(courseRepository.save(course));
+            var dto = courseRepository.save(course).toDto();
             return ResponseEntity.ok(dto);
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -94,6 +85,28 @@ public class CourseService {
     public ResponseEntity<?> deleteCourse(Long id) {
         return courseRepository.findById(id).map(course -> {
             courseRepository.delete(course);
+            return ResponseEntity.noContent().build();
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @Transactional
+    public ResponseEntity<Course> addLecturerToCourse(Long courseId, Long lecturerId) {
+        return courseRepository.findById(courseId).map(course -> {
+            Lecturer lecturer = lecturerRepository.findById(lecturerId)
+                    .orElseThrow(() -> new EntityNotFoundException("Lecturer not found"));
+            course.addLecturer(lecturer);
+            Course saved = courseRepository.save(course);
+            return ResponseEntity.ok(saved);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @Transactional
+    public ResponseEntity<?> removeLecturerFromCourse(Long courseId, Long lecturerId) {
+        return courseRepository.findById(courseId).map(course -> {
+            Lecturer lecturer = lecturerRepository.findById(lecturerId)
+                    .orElseThrow(() -> new EntityNotFoundException("Lecturer not found"));
+            course.removeLecturer(lecturer);
+            courseRepository.save(course);
             return ResponseEntity.noContent().build();
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }

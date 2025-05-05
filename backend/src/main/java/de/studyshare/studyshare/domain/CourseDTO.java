@@ -6,7 +6,7 @@ public record CourseDTO(
         Long id,
         String name,
         FacultyDTO faculty,
-        Set<Long> lecturer_ids
+        Set<Long> lecturerIds
         ) {
 
 }

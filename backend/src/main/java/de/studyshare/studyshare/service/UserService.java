@@ -1,7 +1,6 @@
 package de.studyshare.studyshare.service;
 
 import java.util.List;
-import java.util.function.Function;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,16 +16,6 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    private final Function<User, UserDTO> userToUserDTO = user -> new UserDTO(
-            user.getId(),
-            user.getFirstName(),
-            user.getLastName(),
-            user.getEmail(),
-            user.getPasswordHash(),
-            user.getRole(),
-            user.getUserName()
-    );
-
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -34,14 +23,14 @@ public class UserService {
     @Transactional
     public List<UserDTO> getUsers() {
         return userRepository.findAll().stream()
-                .map(userToUserDTO)
+                .map(User::toDto)
                 .toList();
     }
 
     @Transactional
     public List<UserDTO> getUserByUserName(String userName) {
         return userRepository.findByUserName(userName).stream()
-                .map(userToUserDTO)
+                .map(User::toDto)
                 .toList();
     }
 
