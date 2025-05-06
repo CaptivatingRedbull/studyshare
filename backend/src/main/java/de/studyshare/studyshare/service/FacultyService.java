@@ -1,7 +1,6 @@
 package de.studyshare.studyshare.service;
 
 import java.util.List;
-import java.util.function.Function;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +16,6 @@ public class FacultyService {
 
     private final FacultyRepository facultyRepository;
 
-    private final Function<Faculty, FacultyDTO> facultyToFacultyDTO = faculty -> new FacultyDTO(
-            faculty.getId(), faculty.getName()
-    );
-
     public FacultyService(FacultyRepository facultyRepository) {
         this.facultyRepository = facultyRepository;
     }
@@ -29,7 +24,7 @@ public class FacultyService {
     public List<FacultyDTO> getFaculties() {
         return facultyRepository.findAll()
                 .stream()
-                .map(facultyToFacultyDTO)
+                .map(Faculty::toDto)
                 .toList();
     }
 

@@ -57,4 +57,13 @@ public class CourseController {
         return courseService.deleteCourse(id);
     }
 
+    @PostMapping("/{id}/lecturers/{lecturerId}")
+    public ResponseEntity<Course> addLecturer(@PathVariable Long id, @PathVariable Long lecturerId) {
+        return courseService.addLecturerToCourse(id, lecturerId);
+    }
+
+    @DeleteMapping("/{id}/lecturers/{lecturerId}")
+    public ResponseEntity<?> removeLecturer(@PathVariable Long id, @PathVariable Long lecturerId) {
+        return courseService.removeLecturerFromCourse(id, lecturerId);
+    }
 }
