@@ -25,14 +25,14 @@ public class Course {
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "faculty_id")
+    @JoinColumn(name = "facultyId")
     private Faculty faculty;
 
     @ManyToMany
     @JoinTable(
-            name = "course_lecturer",
-            joinColumns = @JoinColumn(name = "course_id"),
-            inverseJoinColumns = @JoinColumn(name = "lecturer_id")
+            name = "courseLecturer",
+            joinColumns = @JoinColumn(name = "courseId"),
+            inverseJoinColumns = @JoinColumn(name = "lecturerId")
     )
     private Set<Lecturer> lecturers = new HashSet<>();
 
