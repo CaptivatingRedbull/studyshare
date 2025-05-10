@@ -1,8 +1,11 @@
 package de.studyshare.studyshare.domain;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,112 +21,32 @@ public class Content {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "user_id")
     private User uploadedBy;
 
-    private int reportedCount;
-    private int outdatedCount;
+    private int reportedCount = 0;
+    private int outdatedCount = 0;
     private LocalDate uploadDate;
+
+    @Enumerated(EnumType.STRING)
     private ContentCategory contentCategory;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lecturerId")
+    @JoinColumn(name = "lecturer_id")
     private Lecturer lecturer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "courseId")
+    @JoinColumn(name = "course_id")
     private Course course;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "facultyId")
+    @JoinColumn(name = "faculty_id")
     private Faculty faculty;
 
     private String filePath;
+    private String title;
 
-    public ContentDTO toDto() {
-        return new ContentDTO(
-                this.id,
-                this.uploadedBy.toDto(),
-                this.reportedCount,
-                this.outdatedCount,
-                this.uploadDate,
-                this.contentCategory,
-                this.lecturer.toDto(),
-                this.course.toDto(),
-                this.faculty.toDto(),
-                this.filePath);
-    }
-
-    public String getFilePath() {
-        return filePath;
-    }
-
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
-    }
-
-    public Faculty getFaculty() {
-        return faculty;
-    }
-
-    public void setFaculty(Faculty faculty) {
-        this.faculty = faculty;
-    }
-
-    public Course getCourse() {
-        return course;
-    }
-
-    public void setCourse(Course course) {
-        this.course = course;
-    }
-
-    public Lecturer getLecturer() {
-        return lecturer;
-    }
-
-    public void setLecturer(Lecturer lecturer) {
-        this.lecturer = lecturer;
-    }
-
-    public ContentCategory getCategory() {
-        return contentCategory;
-    }
-
-    public void setCategory(ContentCategory contentCategory) {
-        this.contentCategory = contentCategory;
-    }
-
-    public LocalDate getUploadDate() {
-        return uploadDate;
-    }
-
-    public void setUploadDate(LocalDate uploadDate) {
-        this.uploadDate = uploadDate;
-    }
-
-    public int getOutdatedCount() {
-        return outdatedCount;
-    }
-
-    public void setOutdatedCount(int outdatedCount) {
-        this.outdatedCount = outdatedCount;
-    }
-
-    public int getReportedCount() {
-        return reportedCount;
-    }
-
-    public void setReportedCount(int reportedCount) {
-        this.reportedCount = reportedCount;
-    }
-
-    public User getUploadedBy() {
-        return uploadedBy;
-    }
-
-    public void setUploadedBy(User uploadedBy) {
-        this.uploadedBy = uploadedBy;
+    public Content() {
     }
 
     public Long getId() {
@@ -134,4 +57,100 @@ public class Content {
         this.id = id;
     }
 
+    public User getUploadedBy() {
+        return uploadedBy;
+    }
+
+    public void setUploadedBy(User uploadedBy) {
+        this.uploadedBy = uploadedBy;
+    }
+
+    public int getReportedCount() {
+        return reportedCount;
+    }
+
+    public void setReportedCount(int reportedCount) {
+        this.reportedCount = reportedCount;
+    }
+
+    public int getOutdatedCount() {
+        return outdatedCount;
+    }
+
+    public void setOutdatedCount(int outdatedCount) {
+        this.outdatedCount = outdatedCount;
+    }
+
+    public LocalDate getUploadDate() {
+        return uploadDate;
+    }
+
+    public void setUploadDate(LocalDate uploadDate) {
+        this.uploadDate = uploadDate;
+    }
+
+    public ContentCategory getContentCategory() {
+        return contentCategory;
+    } // Getter for contentCategory
+
+    public void setContentCategory(ContentCategory contentCategory) {
+        this.contentCategory = contentCategory;
+    }
+
+    public Lecturer getLecturer() {
+        return lecturer;
+    }
+
+    public void setLecturer(Lecturer lecturer) {
+        this.lecturer = lecturer;
+    }
+
+    public Course getCourse() {
+        return course;
+    }
+
+    public void setCourse(Course course) {
+        this.course = course;
+    }
+
+    public Faculty getFaculty() {
+        return faculty;
+    }
+
+    public void setFaculty(Faculty faculty) {
+        this.faculty = faculty;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Content content = (Content) o;
+        return id != null ? id.equals(content.id) : content.id == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

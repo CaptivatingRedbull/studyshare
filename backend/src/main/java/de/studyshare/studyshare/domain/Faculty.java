@@ -1,6 +1,6 @@
 package de.studyshare.studyshare.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Objects;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,8 +15,11 @@ public class Faculty {
     private Long id;
     private String name;
 
-    @JsonIgnore
     public Faculty() {
+    }
+
+    public Faculty(String name) {
+        this.name = name;
     }
 
     public Faculty(Long id, String name) {
@@ -40,7 +43,20 @@ public class Faculty {
         this.name = name;
     }
 
-    public FacultyDTO toDto() {
-        return new FacultyDTO(this.id, this.name);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Faculty faculty = (Faculty) o;
+        return id != null ? id.equals(faculty.id) : faculty.id == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

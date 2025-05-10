@@ -1,11 +1,10 @@
 package de.studyshare.studyshare.domain;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -28,11 +27,11 @@ public class Course {
     @JoinColumn(name = "facultyId")
     private Faculty faculty;
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
-            name = "courseLecturer",
-            joinColumns = @JoinColumn(name = "courseId"),
-            inverseJoinColumns = @JoinColumn(name = "lecturerId")
+            name = "course_lecturer",
+            joinColumns = @JoinColumn(name = "course_id"),
+            inverseJoinColumns = @JoinColumn(name = "lecturer_id")
     )
     private Set<Lecturer> lecturers = new HashSet<>();
 
@@ -69,7 +68,7 @@ public class Course {
     }
 
     public Set<Lecturer> getLecturers() {
-        return this.lecturers;
+        return lecturers;
     }
 
     public void setLecturers(Set<Lecturer> lecturers) {
@@ -86,34 +85,20 @@ public class Course {
         lecturer.getCourses().remove(this);
     }
 
-    public CourseDTO toDto() {
-        return new CourseDTO(
-                this.id,
-                this.name,
-                this.faculty.toDto(),
-                this.lecturers == null
-                        ? Collections.emptySet()
-                        : this.lecturers.stream()
-                                .map(Lecturer::getId)
-                                .collect(Collectors.toSet())
-        );
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Course)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         Course course = (Course) o;
-        return id != null && id.equals(course.id);
+        return id != null ? id.equals(course.id) : course.id == null;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(id);
+        return Objects.hash(id);
     }
-
 }

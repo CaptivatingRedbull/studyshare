@@ -1,10 +1,8 @@
 package de.studyshare.studyshare.domain;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -66,24 +64,10 @@ public class Lecturer {
 
     public void addCourse(Course course) {
         this.courses.add(course);
-        course.getLecturers().add(this);
     }
 
     public void removeCourse(Course course) {
         this.courses.remove(course);
-        course.getLecturers().remove(this);
-    }
-
-    public LecturerDTO toDto() {
-        return new LecturerDTO(
-                this.id,
-                this.name,
-                this.courses == null
-                        ? Collections.emptySet()
-                        : this.courses.stream()
-                                .map(Course::getId)
-                                .collect(Collectors.toSet())
-        );
     }
 
     @Override
@@ -91,15 +75,15 @@ public class Lecturer {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Lecturer)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Lecturer that = (Lecturer) o;
-        return id != null && id.equals(that.id);
+        Lecturer lecturer = (Lecturer) o;
+        return id != null ? id.equals(lecturer.id) : lecturer.id == null;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(id);
+        return Objects.hash(id);
     }
 }

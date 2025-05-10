@@ -1,8 +1,10 @@
 package de.studyshare.studyshare.controller;
 
+import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,14 +13,16 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import de.studyshare.studyshare.domain.Course;
-import de.studyshare.studyshare.domain.CourseDTO;
-import de.studyshare.studyshare.domain.FacultyDTO;
+import de.studyshare.studyshare.dto.entity.CourseDTO;
+import de.studyshare.studyshare.dto.request.CourseCreateRequest;
+import de.studyshare.studyshare.dto.request.CourseUpdateRequest;
 import de.studyshare.studyshare.service.CourseService;
+import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/courses")
+@RequestMapping("/api/courses")
 public class CourseController {
 
     private final CourseService courseService;
@@ -28,42 +32,54 @@ public class CourseController {
     }
 
     @GetMapping
-    public List<CourseDTO> getCourses() {
-        return courseService.getCourses();
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<CourseDTO>> getAllCourses() {
+        return ResponseEntity.ok(courseService.getAllCourses());
     }
 
     @GetMapping("/{id}")
-    public CourseDTO getCourseById(@PathVariable Long id) {
-        return courseService.getCourseById(id);
-    }
-
-    @GetMapping("/{id}/faculty")
-    public FacultyDTO getFaculty(@PathVariable Long id) {
-        return courseService.getCourseFacultyById(id);
-    }
-
-    @PutMapping("/{id}/faculty/{facultyId}")
-    public ResponseEntity<Course> updateCourseFaculty(@PathVariable Long id, @PathVariable Long facultyId) {
-        return courseService.updateCourseFaculty(id, facultyId);
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CourseDTO> getCourseById(@PathVariable Long id) {
+        return ResponseEntity.ok(courseService.getCourseById(id));
     }
 
     @PostMapping
-    public ResponseEntity<Course> createCourse(@RequestBody Course course) {
-        return courseService.createCourse(course);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CourseDTO> createCourse(@Valid @RequestBody CourseCreateRequest createRequest) {
+        CourseDTO createdCourse = courseService.createCourse(createRequest);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdCourse.id())
+                .toUri();
+        return ResponseEntity.created(location).body(createdCourse);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id, @Valid @RequestBody CourseUpdateRequest updateRequest) {
+        CourseDTO updatedCourse = courseService.updateCourse(id, updateRequest);
+        return ResponseEntity.ok(updatedCourse);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteCourse(@PathVariable Long id) {
-        return courseService.deleteCourse(id);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+        courseService.deleteCourse(id);
+        return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/lecturers/{lecturerId}")
-    public ResponseEntity<Course> addLecturer(@PathVariable Long id, @PathVariable Long lecturerId) {
-        return courseService.addLecturerToCourse(id, lecturerId);
+    @PostMapping("/{courseId}/lecturers/{lecturerId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CourseDTO> addLecturerToCourse(@PathVariable Long courseId, @PathVariable Long lecturerId) {
+        CourseDTO updatedCourse = courseService.addLecturerToCourse(courseId, lecturerId);
+        return ResponseEntity.ok(updatedCourse);
     }
 
-    @DeleteMapping("/{id}/lecturers/{lecturerId}")
-    public ResponseEntity<?> removeLecturer(@PathVariable Long id, @PathVariable Long lecturerId) {
-        return courseService.removeLecturerFromCourse(id, lecturerId);
+    @DeleteMapping("/{courseId}/lecturers/{lecturerId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CourseDTO> removeLecturerFromCourse(@PathVariable Long courseId, @PathVariable Long lecturerId) {
+        CourseDTO updatedCourse = courseService.removeLecturerFromCourse(courseId, lecturerId);
+        return ResponseEntity.ok(updatedCourse);
     }
+
 }

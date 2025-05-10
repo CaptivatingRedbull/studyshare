@@ -5,17 +5,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import de.studyshare.studyshare.domain.Course;
-import de.studyshare.studyshare.domain.CourseDTO;
 import de.studyshare.studyshare.domain.Lecturer;
-import de.studyshare.studyshare.domain.LecturerDTO;
+import de.studyshare.studyshare.dto.entity.LecturerDTO;
+import de.studyshare.studyshare.dto.request.LecturerCreateRequest;
+import de.studyshare.studyshare.dto.request.LecturerUpdateRequest;
+import de.studyshare.studyshare.exception.DuplicateResourceException;
+import de.studyshare.studyshare.exception.ResourceNotFoundException;
 import de.studyshare.studyshare.repository.CourseRepository;
 import de.studyshare.studyshare.repository.LecturerRepository;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -29,67 +29,87 @@ public class LecturerService {
         this.courseRepository = courseRepository;
     }
 
-    public List<LecturerDTO> findAll() {
-        return lecturerRepository.findAll().stream().map(Lecturer::toDto)
+    @Transactional
+    public List<LecturerDTO> getAllLecturers() {
+        return lecturerRepository.findAll().stream()
+                .map(LecturerDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    public LecturerDTO findOne(Long id) {
+    @Transactional
+    public LecturerDTO getLecturerById(Long id) {
         return lecturerRepository.findById(id)
-                .map(Lecturer::toDto)
-                .orElseThrow(() -> new EntityNotFoundException("Lecturer not found with id " + id));
+                .map(LecturerDTO::fromEntity)
+                .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", id));
     }
 
     @Transactional
-    public ResponseEntity<Lecturer> createLecturer(Lecturer lecturer) {
+    public LecturerDTO createLecturer(LecturerCreateRequest createRequest) {
+        if (createRequest.email() != null && !createRequest.email().isEmpty() && lecturerRepository.existsByEmail(createRequest.email())) {
+            throw new DuplicateResourceException("Lecturer", "email", createRequest.email());
+        }
+
+        Lecturer lecturer = new Lecturer();
+        lecturer.setName(createRequest.name());
+        lecturer.setEmail(createRequest.email());
+
+        if (createRequest.courseIds() != null && !createRequest.courseIds().isEmpty()) {
+            Set<Course> courses = new HashSet<>(courseRepository.findAllById(createRequest.courseIds()));
+
+            if (courses.size() != createRequest.courseIds().size()) {
+
+                throw new ResourceNotFoundException("One or more courses not found for the provided IDs.");
+            }
+            lecturer.setCourses(courses);
+        }
+
         Lecturer savedLecturer = lecturerRepository.save(lecturer);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedLecturer);
-    }
-
-    public ResponseEntity<?> deleteLecturer(Long id) {
-        return lecturerRepository.findById(id).map(lecturer -> {
-            lecturerRepository.delete(lecturer);
-            return ResponseEntity.noContent().build();
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+        return LecturerDTO.fromEntity(savedLecturer);
     }
 
     @Transactional
-    public ResponseEntity<LecturerDTO> addCourseToLecturer(Long lecturerId, Long courseId) {
-        return lecturerRepository.findById(lecturerId).map(lecturer -> {
-            Course course = courseRepository.findById(courseId)
-                    .orElseThrow(() -> new EntityNotFoundException("Course not found"));
-            lecturer.addCourse(course);
-            Lecturer saved = lecturerRepository.save(lecturer);
-            return ResponseEntity.ok(saved.toDto());
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+    public LecturerDTO updateLecturer(Long id, LecturerUpdateRequest updateRequest) {
+        Lecturer lecturer = lecturerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", id));
+
+        if (updateRequest.name() != null) {
+            lecturer.setName(updateRequest.name());
+        }
+        if (updateRequest.email() != null) {
+            if (!lecturer.getEmail().equals(updateRequest.email()) && lecturerRepository.existsByEmail(updateRequest.email())) {
+                throw new DuplicateResourceException("Lecturer", "email", updateRequest.email());
+            }
+            lecturer.setEmail(updateRequest.email());
+        }
+
+        if (updateRequest.courseIds() != null) {
+            Set<Course> courses = new HashSet<>(courseRepository.findAllById(updateRequest.courseIds()));
+            if (courses.size() != updateRequest.courseIds().size() && !updateRequest.courseIds().isEmpty()) {
+                throw new ResourceNotFoundException("One or more courses not found for the provided IDs during update.");
+            }
+
+            lecturer.getCourses().clear();
+            if (!courses.isEmpty()) {
+                courses.forEach(lecturer::addCourse);
+            }
+        }
+
+        Lecturer updatedLecturer = lecturerRepository.save(lecturer);
+        return LecturerDTO.fromEntity(updatedLecturer);
     }
 
     @Transactional
-    public ResponseEntity<?> removeCourseFromLecturer(Long lecturerId, Long courseId) {
-        return lecturerRepository.findById(lecturerId).map(lecturer -> {
-            Course course = courseRepository.findById(courseId)
-                    .orElseThrow(() -> new EntityNotFoundException("Course not found"));
-            lecturer.removeCourse(course);
-            lecturerRepository.save(lecturer);
-            return ResponseEntity.noContent().build();
-        }).orElseGet(() -> ResponseEntity.notFound().build());
-    }
+    public void deleteLecturer(Long id) {
+        Lecturer lecturer = lecturerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", id));
 
-    @Transactional
-    public ResponseEntity<LecturerDTO> updateLecturerCourses(Long lecturerId, Set<Long> courseIds) {
-        return lecturerRepository.findById(lecturerId).map(lecturer -> {
-            var courses = courseRepository.findAllById(courseIds);
-            lecturer.setCourses(new HashSet<>(courses));
-            var dto = lecturerRepository.save(lecturer).toDto();
-            return ResponseEntity.ok(dto);
-        }).orElseGet(() -> ResponseEntity.notFound().build());
-    }
+        for (Course course : new HashSet<>(lecturer.getCourses())) {
+            course.getLecturers().remove(lecturer);
 
-    public List<CourseDTO> getLecturerCoursesById(Long lecturerId) {
-        return lecturerRepository.findById(lecturerId)
-                .map(lecturer -> lecturer.getCourses().stream()
-                .map(Course::toDto)
-                .collect(Collectors.toList()))
-                .orElseThrow(() -> new EntityNotFoundException("Lecturer not found with id " + lecturerId));
+        }
+        lecturer.getCourses().clear();
+        lecturerRepository.save(lecturer);
+
+        lecturerRepository.delete(lecturer);
     }
 }
