@@ -34,7 +34,7 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
+      title: "idk",
       url: "#",
       icon: IconDashboard,
     },
