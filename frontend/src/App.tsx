@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate, Outlet, Link } from "react-router-dom";
 import "./App.css";
-import Page from "./dashboard";
+import { LandingPage } from "./pages/LandingPage";
 
 // Layouts
 function PublicLayout() {
@@ -24,20 +24,8 @@ function ProtectedLayout() {
   );
 }
 
-function LandingPage() {
-  return (
-    <div className="text-center space-y-4">
-      <h1 className="text-4xl">Welcome to StudyShare</h1>
-      <div className="space-x-4">
-        <Link to="/login" className="btn">Log in</Link>
-        <Link to="/register" className="btn-outline">Register</Link>
-      </div>
-    </div>
-  );
-}
-
 function LoginPage() {
-  return <div><Page/></div>; 
+  return <div></div>; 
 }
 
 function RegisterPage() {
@@ -54,7 +42,6 @@ export default function App() {
       {/* Public */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
 
