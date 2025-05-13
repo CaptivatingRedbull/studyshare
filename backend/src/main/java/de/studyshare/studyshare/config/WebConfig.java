@@ -1,4 +1,4 @@
-package de.studyshare.studyshare;
+package de.studyshare.studyshare.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
