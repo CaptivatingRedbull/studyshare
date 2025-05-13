@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, Outlet, Link } from "react-router-dom";
 import "./App.css";
+import Page from "./dashboard";
 
 // Layouts
 function PublicLayout() {
@@ -36,7 +37,7 @@ function LandingPage() {
 }
 
 function LoginPage() {
-  return <div>Login Form Here</div>;
+  return <div><Page/></div>; 
 }
 
 function RegisterPage() {
