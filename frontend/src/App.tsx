@@ -24,10 +24,6 @@ function ProtectedLayout() {
   );
 }
 
-function LoginPage() {
-  return <div></div>; 
-}
-
 function RegisterPage() {
   return <div>Registration Form Here</div>;
 }
