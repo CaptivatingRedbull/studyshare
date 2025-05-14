@@ -13,18 +13,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useQuery } from "@tanstack/react-query";
-import { fetchUsers } from "./api/studyshareapi";
-import { UserResponse } from "@/lib/types";
 export default function Page() {
-  const {
-    data: users = [],
-    isLoading,
-    error,
-  } = useQuery<UserResponse[]>({
-    queryKey: ["users"],
-    queryFn: fetchUsers,
-  });
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -54,20 +44,7 @@ export default function Page() {
           </div>
           <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min">
             <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-4">
-              {isLoading && <p>Loading users...</p>}
-              {error && <p>Error loading users: {error.message}</p>}
-              {!isLoading && !error && (
-                <>
-                  <pre>{JSON.stringify(users, null, 2)}</pre>
-                  <ul>
-                    {users.map((user, index) => (
-                      <li key={user.id ?? index}>
-                        {user.email ?? "No email"} (ID: {user.id ?? "No ID"})
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
+              
             </div>
           </div>
         </div>
