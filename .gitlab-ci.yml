@@ -27,12 +27,7 @@ variables:
   HTTPS_PROXY: "http://proxy.hof-university.de:3128"
   NO_PROXY: "localhost,127.0.0.1,.gitlab.com,gitlab.com,$CI_SERVER_HOST" # Add your GitLab instance if it should be bypassed
 
-# Workflow rules to control when the entire pipeline runs
-workflow:
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true" # Only run for protected branches
-      when: always
-    - when: never # Do not run for any other case (e.g., non-protected branches, tags without specific rules)
+
 
 # Job to build the backend Docker image
 build_backend:
@@ -46,8 +41,7 @@ build_backend:
     - docker build -t $BACKEND_IMAGE_TAG -f backend/Dockerfile backend/
     - echo "Pushing backend image to GitLab Registry..."
     - docker push $BACKEND_IMAGE_TAG
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
+  
 
 # Job to build the frontend Docker image
 build_frontend:
@@ -64,8 +58,7 @@ build_frontend:
       -t $FRONTEND_IMAGE_TAG -f frontend/Dockerfile frontend/
     - echo "Pushing frontend image to GitLab Registry..."
     - docker push $FRONTEND_IMAGE_TAG
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
+  
 
 # Job to deploy (run) the backend container
 deploy_backend:
@@ -90,8 +83,7 @@ deploy_backend:
     - sleep 10 # Give container time to start
     - docker ps -f name=studyshare-backend-deploy
     - if [ $(docker ps -f name=studyshare-backend-deploy --format "{{.Names}}") != "studyshare-backend-deploy" ]; then echo "Backend container failed to start"; exit 1; fi
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
+  
 
 # Job to deploy (run) the frontend container
 deploy_frontend:
@@ -119,8 +111,7 @@ deploy_frontend:
     - sleep 5 # Give container time to start
     - docker ps -f name=studyshare-frontend-deploy
     - if [ $(docker ps -f name=studyshare-frontend-deploy --format "{{.Names}}") != "studyshare-frontend-deploy" ]; then echo "Frontend container failed to start"; exit 1; fi
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
+  
 
 # Optional: Create a Docker network if containers need to communicate via hostname
 # This job would run before build and deploy stages.
