@@ -15,11 +15,8 @@ COPY package.json package-lock.json ./
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
 COPY . .
 
-# Build the application
-# The VITE_API_URL environment variable set above will be used by Vite here
 RUN npm run build
 
 # Stage 2: Serve the static files with Nginx
