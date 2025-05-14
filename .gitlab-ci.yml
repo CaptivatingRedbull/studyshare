@@ -1,31 +1,36 @@
 # Define the stages of the pipeline
 stages:
   - build
-  - deploy # Changed from 'run' to 'deploy' for clarity, as it's deploying to the runner's Docker
+  - deploy
 
 # Default settings for all jobs
 default:
   image: docker:20.10.16 # Use a Docker image that has the Docker client
   services:
-    - docker:20.10.16-dind # Docker-in-Docker service to run Docker commands
+    - name: docker:20.10.16-dind
+      alias: docker # Alias for the dind service, can be used in NO_PROXY
   tags:
-    - docker # Ensure your GitLab runner has this tag and can execute Docker commands
+    - docker # Ensure your GitLab runner has this tag
 
 # Variables used throughout the pipeline
 variables:
-  # GitLab Container Registry is used by default with these variables
-  # CI_REGISTRY_IMAGE will be something like: registry.gitlab.com/your-group/your-project
   BACKEND_IMAGE_TAG: $CI_REGISTRY_IMAGE/studyshare-backend:$CI_COMMIT_REF_SLUG
   FRONTEND_IMAGE_TAG: $CI_REGISTRY_IMAGE/studyshare-frontend:$CI_COMMIT_REF_SLUG
-  # For frontend to know where backend is. This assumes backend is accessible via localhost
-  # from the runner's perspective if they share the network or backend port is exposed on host.
-  # If using a Docker network, this would be http://studyshare-backend-deploy:8080
   VITE_API_URL_GITLAB_CI: "http://localhost:8080" # Adjust if network setup changes
 
   # Proxy configuration for git and other tools within the job environment
   HTTP_PROXY: "http://proxy.hof-university.de:3128"
   HTTPS_PROXY: "http://proxy.hof-university.de:3128"
-  NO_PROXY: "localhost,127.0.0.1,.gitlab.com,gitlab.com,$CI_SERVER_HOST" # Add your GitLab instance if it should be bypassed
+  # NO_PROXY: If gitlab.hof-university.de is ONLY reachable via proxy, it should NOT be here.
+  # 'docker' is the alias for the dind service, which should be local.
+  NO_PROXY: "localhost,127.0.0.1,docker"
+
+  # Git strategy variables for debugging clone issues
+  GIT_STRATEGY: clone # Explicitly set strategy
+  GIT_DEPTH: "20" # Matches your log
+  GIT_TRACE: "1" # Enables git tracing
+  GIT_CURL_VERBOSE: "1" # Enables curl verbose output for git http operations
+  GIT_SSL_NO_VERIFY: "false" # Set to "true" ONLY for temporary debugging of SSL issues with proxy
 
 
 
@@ -34,40 +39,39 @@ build_backend:
   stage: build
   before_script:
     - docker info
-    # Login to GitLab Container Registry
+    - echo "Logging into GitLab Registry-> $CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
     - echo "Building backend Docker image-> $BACKEND_IMAGE_TAG"
     - docker build -t $BACKEND_IMAGE_TAG -f backend/Dockerfile backend/
     - echo "Pushing backend image to GitLab Registry..."
     - docker push $BACKEND_IMAGE_TAG
-  
 
 # Job to build the frontend Docker image
 build_frontend:
   stage: build
   before_script:
     - docker info
+    - echo "Logging into GitLab Registry-> $CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
     - echo "Building frontend Docker image-> $FRONTEND_IMAGE_TAG"
-    # Pass VITE_API_URL as a build argument if your Dockerfile is set up to use it
     - >
       docker build
       --build-arg VITE_API_URL=${VITE_API_URL_GITLAB_CI}
       -t $FRONTEND_IMAGE_TAG -f frontend/Dockerfile frontend/
     - echo "Pushing frontend image to GitLab Registry..."
     - docker push $FRONTEND_IMAGE_TAG
-  
 
 # Job to deploy (run) the backend container
 deploy_backend:
   stage: deploy
   needs:
-    - job: build_backend # Depends on the successful build of the backend image
+    - job: build_backend
       artifacts: false
   before_script:
     - docker info
+    - echo "Logging into GitLab Registry-> $CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
     - echo "Pulling backend image from GitLab Registry-> $BACKEND_IMAGE_TAG"
@@ -79,20 +83,19 @@ deploy_backend:
       docker run -d --name studyshare-backend-deploy
       -p 8080:8080
       $BACKEND_IMAGE_TAG
-    # Basic check: Ensure container is running
-    - sleep 10 # Give container time to start
+    - sleep 10
     - docker ps -f name=studyshare-backend-deploy
     - if [ $(docker ps -f name=studyshare-backend-deploy --format "{{.Names}}") != "studyshare-backend-deploy" ]; then echo "Backend container failed to start"; exit 1; fi
-  
 
 # Job to deploy (run) the frontend container
 deploy_frontend:
   stage: deploy
   needs:
-    - job: build_frontend # Depends on the successful build of the frontend image
+    - job: build_frontend
       artifacts: false
   before_script:
     - docker info
+    - echo "Logging into GitLab Registry-> $CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
     - echo "Pulling frontend image from GitLab Registry-> $FRONTEND_IMAGE_TAG"
@@ -100,29 +103,10 @@ deploy_frontend:
     - echo "Stopping and removing existing frontend container if any..."
     - docker rm -f studyshare-frontend-deploy || true
     - echo "Running frontend container..."
-    # Nginx in the frontend Dockerfile serves on port 80. We map host 5173 to container 80.
-    # The VITE_API_URL_GITLAB_CI is passed as a build arg during `docker build` for the frontend,
-    # so it should be baked into the static assets.
     - >
       docker run -d --name studyshare-frontend-deploy
       -p 5173:80
       $FRONTEND_IMAGE_TAG
-    # Basic check: Ensure container is running
-    - sleep 5 # Give container time to start
+    - sleep 5
     - docker ps -f name=studyshare-frontend-deploy
     - if [ $(docker ps -f name=studyshare-frontend-deploy --format "{{.Names}}") != "studyshare-frontend-deploy" ]; then echo "Frontend container failed to start"; exit 1; fi
-  
-
-# Optional: Create a Docker network if containers need to communicate via hostname
-# This job would run before build and deploy stages.
-# setup_docker_network:
-#   stage: .pre # Special stage that runs before all others
-#   script:
-#     - docker network create studyshare-net || true # Create if not exists, ignore error if it already exists
-#   rules:
-#     - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
-
-# If using the network, add to deploy_backend and deploy_frontend:
-#   - --network studyshare-net
-# And VITE_API_URL_GITLAB_CI could be "http://studyshare-backend-deploy:8080"
-
