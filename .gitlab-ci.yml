@@ -22,14 +22,16 @@ build_backend:
 
 build_frontend:
   stage: build
-  variables:
-    VITE_API_URL_GITLAB_CI: "http://localhost:8080"
   script:
-    - docker info
-    - echo "Building frontend image"
+    - |
+      cat > frontend/.env.production <<EOF
+      VITE_API_URL=$VITE_API_URL_GITLAB_CI
+      EOF
     - cd frontend
-    - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG .
-        --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI"
+    - npm ci
+    - npm run build
+    - cd ..
+    - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG -f frontend/Dockerfile .
 
 deploy_backend:
   stage: deploy
