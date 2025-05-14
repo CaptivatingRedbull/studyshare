@@ -6,12 +6,12 @@ default:
   image: docker:20.10.16        # Docker CLI
   tags:
     - docker
-  variables:
-    # talk to host Docker (no DinD)
-    DOCKER_HOST: "unix:///var/run/docker.sock"
-    HTTP_PROXY: "http://proxy.hof-university.de:3128"
-    HTTPS_PROXY: "http://proxy.hof-university.de:3128"
-    NO_PROXY: "localhost,127.0.0.1"
+variables:
+  # talk to host Docker (no DinD)
+  DOCKER_HOST: "unix:///var/run/docker.sock"
+  HTTP_PROXY: "http://proxy.hof-university.de:3128"
+  HTTPS_PROXY: "http://proxy.hof-university.de:3128"
+  NO_PROXY: "localhost,127.0.0.1"
 
 build_backend:
   stage: build
