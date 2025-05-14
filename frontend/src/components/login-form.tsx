@@ -43,13 +43,13 @@ export function LoginForm({
       contextLogin(response);
       
       
-      setLoginInfo("Login successful! Redirecting to your dashboard...");
-      toastSuccess({message: `Willkommen zurück, ${response.username}!`}); 
-      console.log("Login success: ", loginInfo)
+
+      toastSuccess({message: `Willkommen zurück, ${response.username}!`, title: "Erfolgreich angemeldet!"}); 
+      console.log("Erfolgreich angemeldet: ", loginInfo)
 
       
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/exchange");
       }, 5000);
 
     } catch (err: any) {
