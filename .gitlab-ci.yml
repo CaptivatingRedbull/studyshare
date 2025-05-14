@@ -114,8 +114,6 @@ deploy_frontend:
     - sleep 5 # Give container time to start
     - docker ps -f name=studyshare-frontend-deploy
     - if [ $(docker ps -f name=studyshare-frontend-deploy --format "{{.Names}}") != "studyshare-frontend-deploy" ]; then echo "Frontend container failed to start"; exit 1; fi
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
 
 # Optional: Create a Docker network if containers need to communicate via hostname
 # This job would run before build and deploy stages.
