@@ -23,8 +23,8 @@ build_frontend:
   stage: build
   script:
     - echo "Building frontend image studyshare-frontend:$CI_COMMIT_REF_SLUG"
-    - docker build --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI" \
-        -t studyshare-frontend:$CI_COMMIT_REF_SLUG \
+    - docker build --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI"  
+        -t studyshare-frontend:$CI_COMMIT_REF_SLUG  
         -f frontend/Dockerfile frontend/
 
 deploy_backend:
