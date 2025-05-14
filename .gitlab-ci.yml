@@ -20,18 +20,20 @@ build_backend:
     - cd backend
     - docker build -t studyshare-backend:$CI_COMMIT_REF_SLUG .
 
-build_frontend:
+build_frontend_assets:
+  image: node:18           # ← pick up npm & Node
   stage: build
+  variables:
+    VITE_API_URL: "http://localhost:8080"
   script:
-    - |
-      cat > frontend/.env.production <<EOF
-      VITE_API_URL=$VITE_API_URL_GITLAB_CI
-      EOF
     - cd frontend
+    - echo "VITE_API_URL=$VITE_API_URL" > .env.production
     - npm ci
     - npm run build
-    - cd ..
-    - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG -f frontend/Dockerfile .
+  artifacts:
+    paths:
+      - frontend/dist
+    expire_in: 1h
 
 deploy_backend:
   stage: deploy
