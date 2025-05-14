@@ -1,6 +1,5 @@
 import React from "react";
 import { toast, type ExternalToast } from "sonner";
-import { Info, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 
 // Helper component for consistent toast content structure
 // This component is not exported and is used internally by the toast functions.
