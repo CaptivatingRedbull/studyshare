@@ -1,4 +1,3 @@
-// frontend/src/components/login-form.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -13,11 +12,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login as apiLogin } from "@/api/authApi";
-import { toast } from "sonner";
+import { toastSuccess, toastError } from "@/components/ui/sonner";
 import { Link } from "react-router-dom";
-import { FormErrorAlert } from "@/components/ui/FormErrorAlert"; 
-import { FormInfoAlert } from "@/components/ui/FormInfoAlert"; // Import the new FormInfoAlert
-import { useAuth } from "@/context/authContext";
+
+import { useAuth } from "@/context/AuthContext";
 
 export function LoginForm({
   className,
@@ -27,7 +25,7 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [loginInfo, setLoginInfo] = useState<string | null>(null); // State for informational messages
+  const [loginInfo, setLoginInfo] = useState<string | null>(null); 
 
   const navigate = useNavigate();
   const { login: contextLogin } = useAuth();
@@ -36,7 +34,7 @@ export function LoginForm({
     event.preventDefault();
     setIsLoading(true);
     setLoginError(null);
-    setLoginInfo(null); // Clear previous info messages
+    setLoginInfo(null);
 
     try {
       const loginData = { username, password: password };
@@ -46,7 +44,8 @@ export function LoginForm({
       
       
       setLoginInfo("Login successful! Redirecting to your dashboard...");
-      toast.success(`Welcome back, ${response.username}!`); 
+      toastSuccess({message: `Willkommen zurück, ${response.username}!`}); 
+      console.log("Login success: ", loginInfo)
 
       
       setTimeout(() => {
@@ -54,9 +53,10 @@ export function LoginForm({
       }, 5000);
 
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || "Login failed. Please try again.";
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || "Login fehlgeschlagen. Versuche es erneut.";
       setLoginError(errorMessage);
-      console.error("Login error:", err);
+      console.error("Login error: ", loginError);
+      toastError({message: errorMessage})
       setIsLoading(false);
     } 
     
@@ -66,24 +66,21 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6 w-full max-w-md", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
+          <CardTitle>Anmelden</CardTitle>
           <CardDescription>
-            Enter your username and password below to login.
+            Hier Benutzername und Passwort eingeben.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-4">
-              
-              <FormErrorAlert message={loginError} title="Login Error" />
-              <FormInfoAlert message={loginInfo} title="Login Status" /> {/* Display info messages */}
 
               <div className="grid gap-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Benutzername</Label>
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Username hier eingeben"
+                  placeholder="Benutzername hier eingeben"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -113,14 +110,14 @@ export function LoginForm({
 
               <div className="flex flex-col gap-3 mt-2">
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? "Anmelden..." : "Angemeldet"}
                 </Button>
               </div>
             </div>
             <div className="mt-6 text-center text-sm">
-              Don&apos;t have an account?{" "}
+              Noch keinen Account?{" "}
               <Link to="/register" className="underline underline-offset-4 hover:text-primary">
-                Sign up
+                Registrieren
               </Link>
             </div>
           </form>
