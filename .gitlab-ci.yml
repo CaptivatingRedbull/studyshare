@@ -1,135 +1,110 @@
-# Define the stages of the pipeline
+# .gitlab-ci.yml
+
+# Define the pipeline stages
 stages:
   - build
   - deploy
 
 # Default settings for all jobs
 default:
-  image: docker:20.10.16-git # Use a Docker image that has Git and Docker client
+  image: docker:20.10.16-git                  # Docker CLI + Git
   services:
     - name: docker:20.10.16-dind
-      alias: docker 
-      command: ["--host=tcp://0.0.0.0:2375"]
+      alias: docker
+      command: 
+        # Run the DinD daemon unencrypted on TCP/2375
+        - "--host=tcp://0.0.0.0:2375"
   tags:
-    - docker 
+    - docker                                 # Make sure your runner is tagged "docker"
 
-# Variables used throughout the pipeline
+# Global variables
 variables:
-  BACKEND_IMAGE_TAG: $CI_REGISTRY_IMAGE/studyshare-backend:$CI_COMMIT_REF_SLUG
-  FRONTEND_IMAGE_TAG: $CI_REGISTRY_IMAGE/studyshare-frontend:$CI_COMMIT_REF_SLUG
-  VITE_API_URL_GITLAB_CI: "http://localhost:8080" # Adjust if network setup changes
-
-  # Configure Docker client to connect to the dind service over TLS
-  DOCKER_HOST: "tcp://docker:2376"
+  # Disable TLS for Docker-in-Docker
   DOCKER_TLS_CERTDIR: ""
+  # Point Docker client at the DinD service port
+  DOCKER_HOST: "tcp://docker:2375"
 
-  # Proxy configuration for git and other tools within the job environment
+  # Registry image tags
+  BACKEND_IMAGE_TAG: "$CI_REGISTRY_IMAGE/studyshare-backend:$CI_COMMIT_REF_SLUG"
+  FRONTEND_IMAGE_TAG: "$CI_REGISTRY_IMAGE/studyshare-frontend:$CI_COMMIT_REF_SLUG"
+
+  # Proxy settings (if needed)
   HTTP_PROXY: "http://proxy.hof-university.de:3128"
   HTTPS_PROXY: "http://proxy.hof-university.de:3128"
-  NO_PROXY: "localhost,127.0.0.1,docker" # 'docker' is the alias for the dind service
+  NO_PROXY: "localhost,127.0.0.1,docker"
 
-  # Git strategy variables for debugging clone issues
+  # Git settings for debugging
   GIT_STRATEGY: clone
   GIT_DEPTH: "20"
   GIT_TRACE: "1"
   GIT_CURL_VERBOSE: "1"
-  GIT_SSL_NO_VERIFY: "false" # Should be false for security
+  GIT_SSL_NO_VERIFY: "false"
 
-# Job to build the backend Docker image
+# Build the backend Docker image
 build_backend:
   stage: build
-  before_script:
-    - if [ -n "$CI_SERVER_TLS_CA_FILE" ]; then echo "Configuring git with CA file $CI_SERVER_TLS_CA_FILE"; git config --global http.sslCAInfo "$CI_SERVER_TLS_CA_FILE"; else echo "CI_SERVER_TLS_CA_FILE not set"; fi
-    - echo "Listing /certs directory..."
-    - ls -la /certs || echo "/certs directory does not exist or is empty"
-    - echo "Listing /certs/client directory..."
-    - ls -la /certs/client || echo "/certs/client directory does not exist or is empty"
-    - echo "Waiting for Docker daemon at $DOCKER_HOST..."
-    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
-    - echo "Docker daemon is ready!"
-    - docker info
-    - echo "Logging into GitLab Registry $CI_REGISTRY"
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - echo "Building backend Docker image $BACKEND_IMAGE_TAG"
-    - docker build -t $BACKEND_IMAGE_TAG -f backend/Dockerfile backend/
-    - echo "Pushing backend image to GitLab Registry"
-    - docker push $BACKEND_IMAGE_TAG
+    - echo "Waiting for Docker daemon at $DOCKER_HOST…"
+    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
+    - echo "Docker is up—building backend image"
+    - docker build -t "$BACKEND_IMAGE_TAG" -f backend/Dockerfile backend/
+    - echo "Pushing backend image"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker push "$BACKEND_IMAGE_TAG"
 
-# Job to build the frontend Docker image
+# Build the frontend Docker image
 build_frontend:
   stage: build
-  before_script:
-    - if [ -n "$CI_SERVER_TLS_CA_FILE" ]; then echo "Configuring git with CA file $CI_SERVER_TLS_CA_FILE"; git config --global http.sslCAInfo "$CI_SERVER_TLS_CA_FILE"; else echo "CI_SERVER_TLS_CA_FILE not set"; fi
-    - echo "Listing /certs directory..."
-    - ls -la /certs || echo "/certs directory does not exist or is empty"
-    - echo "Listing /certs/client directory..."
-    - ls -la /certs/client || echo "/certs/client directory does not exist or is empty"
-    - echo "Waiting for Docker daemon at $DOCKER_HOST..."
-    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
-    - echo "Docker daemon is ready!"
-    - docker info
-    - echo "Logging into GitLab Registry $CI_REGISTRY"
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - echo "Building frontend Docker image $FRONTEND_IMAGE_TAG"
-    - >
-      docker build
-      --build-arg VITE_API_URL=${VITE_API_URL_GITLAB_CI}
-      -t $FRONTEND_IMAGE_TAG -f frontend/Dockerfile frontend/
-    - echo "Pushing frontend image to GitLab Registry"
-    - docker push $FRONTEND_IMAGE_TAG
+    - echo "Waiting for Docker daemon at $DOCKER_HOST…"
+    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
+    - echo "Docker is up—building frontend image"
+    - docker build \
+        --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI" \
+        -t "$FRONTEND_IMAGE_TAG" \
+        -f frontend/Dockerfile frontend/
+    - echo "Pushing frontend image"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker push "$FRONTEND_IMAGE_TAG"
 
-# Job to deploy (run) the backend container
+# Deploy the backend container
 deploy_backend:
   stage: deploy
   needs:
-    - job: build_backend
-      artifacts: false
-  before_script:
-    - echo "Waiting for Docker daemon at $DOCKER_HOST..."
-    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
-    - echo "Docker daemon is ready!"
-    - docker info
-    - echo "Logging into GitLab Registry $CI_REGISTRY"
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - build_backend
   script:
-    - echo "Pulling backend image from GitLab Registry $BACKEND_IMAGE_TAG"
-    - docker pull $BACKEND_IMAGE_TAG
-    - echo "Stopping and removing existing backend container if any"
+    - echo "Waiting for Docker daemon at $DOCKER_HOST…"
+    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
+    - echo "Pulling backend image"
+    - docker pull "$BACKEND_IMAGE_TAG"
+    - echo "Replacing backend container"
     - docker rm -f studyshare-backend-deploy || true
-    - echo "Running backend container"
-    - >
-      docker run -d --name studyshare-backend-deploy
-      -p 8080:8080
-      $BACKEND_IMAGE_TAG
+    - docker run -d --name studyshare-backend-deploy -p 8080:8080 "$BACKEND_IMAGE_TAG"
     - sleep 10
-    - docker ps -f name=studyshare-backend-deploy
-    - if [ $(docker ps -f name=studyshare-backend-deploy --format "{{.Names}}") != "studyshare-backend-deploy" ]; then echo "Backend container failed to start"; exit 1; fi
+    - if [ "$(docker ps -q -f name=studyshare-backend-deploy)" = "" ]; then
+        echo "❌ Backend failed to start" >&2;
+        exit 1;
+      else
+        echo "✅ Backend is running";
+      fi
 
-# Job to deploy (run) the frontend container
+# Deploy the frontend container
 deploy_frontend:
   stage: deploy
   needs:
-    - job: build_frontend
-      artifacts: false
-  before_script:
-    - echo "Waiting for Docker daemon at $DOCKER_HOST..."
-    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
-    - echo "Docker daemon is ready!"
-    - docker info
-    - echo "Logging into GitLab Registry $CI_REGISTRY"
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - build_frontend
   script:
-    - echo "Pulling frontend image from GitLab Registry $FRONTEND_IMAGE_TAG"
-    - docker pull $FRONTEND_IMAGE_TAG
-    - echo "Stopping and removing existing frontend container if any"
+    - echo "Waiting for Docker daemon at $DOCKER_HOST…"
+    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
+    - echo "Pulling frontend image"
+    - docker pull "$FRONTEND_IMAGE_TAG"
+    - echo "Replacing frontend container"
     - docker rm -f studyshare-frontend-deploy || true
-    - echo "Running frontend container"
-    - >
-      docker run -d --name studyshare-frontend-deploy
-      -p 5173:80
-      $FRONTEND_IMAGE_TAG
+    - docker run -d --name studyshare-frontend-deploy -p 5173:80 "$FRONTEND_IMAGE_TAG"
     - sleep 5
-    - docker ps -f name=studyshare-frontend-deploy
-    - if [ $(docker ps -f name=studyshare-frontend-deploy --format "{{.Names}}") != "studyshare-frontend-deploy" ]; then echo "Frontend container failed to start"; exit 1; fi
+    - if [ "$(docker ps -q -f name=studyshare-frontend-deploy)" = "" ]; then
+        echo "❌ Frontend failed to start" >&2;
+        exit 1;
+      else
+        echo "✅ Frontend is running";
+      fi
