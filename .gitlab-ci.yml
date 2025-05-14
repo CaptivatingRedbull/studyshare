@@ -8,14 +8,10 @@ default:
   image: docker:20.10.16-git # Use a Docker image that has Git and Docker client
   services:
     - name: docker:20.10.16-dind
-      alias: docker # Alias for the dind service
-      # Attempt to explicitly set the host for the DinD daemon
-      # and ensure it uses a clean path for its internal socket.
-      # Using --host=unix:///var/run/docker.sock is the default for dind.
-      # We keep TLS enabled as it's generally more robust if certs are handled.
-      command: ["--host=tcp://0.0.0.0:2376", "--tlsverify", "--tlscacert=/certs/server/ca.pem", "--tlscert=/certs/server/cert.pem", "--tlskey=/certs/server/key.pem"]
+      alias: docker 
+      command: ["--host=tcp://0.0.0.0:2375"]
   tags:
-    - docker # Ensure your GitLab runner has this tag
+    - docker 
 
 # Variables used throughout the pipeline
 variables:
@@ -25,8 +21,7 @@ variables:
 
   # Configure Docker client to connect to the dind service over TLS
   DOCKER_HOST: "tcp://docker:2376"
-  DOCKER_TLS_CERTDIR: "/certs/client" # Runner mounts dind client certs here for the 'docker' alias
-  DOCKER_TLS_VERIFY: "1"      # Enforce TLS verification
+  DOCKER_TLS_CERTDIR: ""
 
   # Proxy configuration for git and other tools within the job environment
   HTTP_PROXY: "http://proxy.hof-university.de:3128"
