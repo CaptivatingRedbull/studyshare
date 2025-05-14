@@ -105,15 +105,3 @@ deploy_frontend:
     - docker ps -f name=studyshare-frontend-deploy
     - if [ $(docker ps -f name=studyshare-frontend-deploy --format "{{.Names}}") != "studyshare-frontend-deploy" ]; then echo "Frontend container failed to start"; exit 1; fi
 
-# Optional: Create a Docker network if containers need to communicate via hostname
-# This job would run before build and deploy stages.
-# setup_docker_network:
-#   stage: .pre # Special stage that runs before all others
-#   script:
-#     - docker network create studyshare-net || true # Create if not exists, ignore error if it already exists
-#   rules:
-#     - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
-
-# If using the network, add to deploy_backend and deploy_frontend:
-#   - --network studyshare-net
-# And VITE_API_URL_GITLAB_CI could be "http://studyshare-backend-deploy:8080"
