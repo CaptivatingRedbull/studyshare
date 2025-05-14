@@ -11,6 +11,7 @@ default:
   tags:
     - docker # Ensure your GitLab runner has this tag and can execute Docker commands
 
+# Variables used throughout the pipeline
 variables:
   # GitLab Container Registry is used by default with these variables
   # CI_REGISTRY_IMAGE will be something like: registry.gitlab.com/your-group/your-project
@@ -21,6 +22,18 @@ variables:
   # If using a Docker network, this would be http://studyshare-backend-deploy:8080
   VITE_API_URL_GITLAB_CI: "http://localhost:8080" # Adjust if network setup changes
 
+  # Proxy configuration for git and other tools within the job environment
+  HTTP_PROXY: "http://proxy.hof-university.de:3128"
+  HTTPS_PROXY: "http://proxy.hof-university.de:3128"
+  NO_PROXY: "localhost,127.0.0.1,.gitlab.com,gitlab.com,$CI_SERVER_HOST" # Add your GitLab instance if it should be bypassed
+
+# Workflow rules to control when the entire pipeline runs
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true" # Only run for protected branches
+      when: always
+    - when: never # Do not run for any other case (e.g., non-protected branches, tags without specific rules)
+
 # Job to build the backend Docker image
 build_backend:
   stage: build
@@ -29,11 +42,12 @@ build_backend:
     # Login to GitLab Container Registry
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - echo "Building backend Docker image -> $BACKEND_IMAGE_TAG"
+    - echo "Building backend Docker image: $BACKEND_IMAGE_TAG"
     - docker build -t $BACKEND_IMAGE_TAG -f backend/Dockerfile backend/
     - echo "Pushing backend image to GitLab Registry..."
     - docker push $BACKEND_IMAGE_TAG
-
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
 
 # Job to build the frontend Docker image
 build_frontend:
@@ -42,16 +56,16 @@ build_frontend:
     - docker info
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - echo "Building frontend Docker image -> $FRONTEND_IMAGE_TAG"
+    - echo "Building frontend Docker image: $FRONTEND_IMAGE_TAG"
     # Pass VITE_API_URL as a build argument if your Dockerfile is set up to use it
-    # Otherwise, it will be an environment variable for the Nginx container at runtime
     - >
       docker build
       --build-arg VITE_API_URL=${VITE_API_URL_GITLAB_CI}
       -t $FRONTEND_IMAGE_TAG -f frontend/Dockerfile frontend/
     - echo "Pushing frontend image to GitLab Registry..."
     - docker push $FRONTEND_IMAGE_TAG
-
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
 
 # Job to deploy (run) the backend container
 deploy_backend:
@@ -63,7 +77,7 @@ deploy_backend:
     - docker info
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - echo "Pulling backend image from GitLab Registry -> $BACKEND_IMAGE_TAG"
+    - echo "Pulling backend image from GitLab Registry: $BACKEND_IMAGE_TAG"
     - docker pull $BACKEND_IMAGE_TAG
     - echo "Stopping and removing existing backend container if any..."
     - docker rm -f studyshare-backend-deploy || true
@@ -76,7 +90,8 @@ deploy_backend:
     - sleep 10 # Give container time to start
     - docker ps -f name=studyshare-backend-deploy
     - if [ $(docker ps -f name=studyshare-backend-deploy --format "{{.Names}}") != "studyshare-backend-deploy" ]; then echo "Backend container failed to start"; exit 1; fi
-
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
 
 # Job to deploy (run) the frontend container
 deploy_frontend:
@@ -88,7 +103,7 @@ deploy_frontend:
     - docker info
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - echo "Pulling frontend image from GitLab Registry -> $FRONTEND_IMAGE_TAG"
+    - echo "Pulling frontend image from GitLab Registry: $FRONTEND_IMAGE_TAG"
     - docker pull $FRONTEND_IMAGE_TAG
     - echo "Stopping and removing existing frontend container if any..."
     - docker rm -f studyshare-frontend-deploy || true
@@ -104,4 +119,19 @@ deploy_frontend:
     - sleep 5 # Give container time to start
     - docker ps -f name=studyshare-frontend-deploy
     - if [ $(docker ps -f name=studyshare-frontend-deploy --format "{{.Names}}") != "studyshare-frontend-deploy" ]; then echo "Frontend container failed to start"; exit 1; fi
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
+
+# Optional: Create a Docker network if containers need to communicate via hostname
+# This job would run before build and deploy stages.
+# setup_docker_network:
+#   stage: .pre # Special stage that runs before all others
+#   script:
+#     - docker network create studyshare-net || true # Create if not exists, ignore error if it already exists
+#   rules:
+#     - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH_PROTECTED == "true"
+
+# If using the network, add to deploy_backend and deploy_frontend:
+#   - --network studyshare-net
+# And VITE_API_URL_GITLAB_CI could be "http://studyshare-backend-deploy:8080"
 
