@@ -1,110 +1,64 @@
 # .gitlab-ci.yml
 
-# Define the pipeline stages
 stages:
   - build
   - deploy
 
-
 default:
-  image: docker:20.10.16-git                  # Docker CLI + Git
-  services:
-    - name: docker:20.10.16-dind
-      alias: docker
-      command: 
-        # Run the DinD daemon unencrypted on TCP/2375
-        - "--host=tcp://0.0.0.0:2375"
+  image: docker:20.10.16        # Docker CLI
   tags:
-    - docker                                 # Make sure your runner is tagged "docker"
-
-# Global variables
+    - docker                   # make sure your runner has this tag
 variables:
-  # Disable TLS for Docker-in-Docker
-  DOCKER_TLS_CERTDIR: ""
-  # Point Docker client at the DinD service port
-  DOCKER_HOST: "tcp://docker:2375"
-
-  # Registry image tags
-  BACKEND_IMAGE_TAG: "$CI_REGISTRY_IMAGE/studyshare-backend:$CI_COMMIT_REF_SLUG"
-  FRONTEND_IMAGE_TAG: "$CI_REGISTRY_IMAGE/studyshare-frontend:$CI_COMMIT_REF_SLUG"
-
-  # Proxy settings (if needed)
+  # Point the Docker CLI at the host's socket
+  DOCKER_HOST: "unix:///var/run/docker.sock"
+  # Optional proxy settings if still needed
   HTTP_PROXY: "http://proxy.hof-university.de:3128"
   HTTPS_PROXY: "http://proxy.hof-university.de:3128"
-  NO_PROXY: "localhost,127.0.0.1,docker"
+  NO_PROXY: "localhost,127.0.0.1"
 
-  # Git settings for debugging
-  GIT_STRATEGY: clone
-  GIT_DEPTH: "20"
-  GIT_TRACE: "1"
-  GIT_CURL_VERBOSE: "1"
-  GIT_SSL_NO_VERIFY: "false"
-
-# Build the backend Docker image
+# Build the backend on the host Docker daemon
 build_backend:
   stage: build
   script:
-    - echo "Waiting for Docker daemon at $DOCKER_HOST…"
-    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
-    - echo "Docker is up—building backend image"
-    - docker build -t "$BACKEND_IMAGE_TAG" -f backend/Dockerfile backend/
-    - echo "Pushing backend image"
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
-    - docker push "$BACKEND_IMAGE_TAG"
+    - echo "Building backend image studyshare-backend:$CI_COMMIT_REF_SLUG"
+    - docker build \
+        -t studyshare-backend:$CI_COMMIT_REF_SLUG \
+        -f backend/Dockerfile backend/
 
-# Build the frontend Docker image
+# Build the frontend on the host Docker daemon
 build_frontend:
   stage: build
   script:
-    - echo "Waiting for Docker daemon at $DOCKER_HOST…"
-    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
-    - echo "Docker is up—building frontend image"
+    - echo "Building frontend image studyshare-frontend:$CI_COMMIT_REF_SLUG"
     - docker build \
         --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI" \
-        -t "$FRONTEND_IMAGE_TAG" \
+        -t studyshare-frontend:$CI_COMMIT_REF_SLUG \
         -f frontend/Dockerfile frontend/
-    - echo "Pushing frontend image"
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
-    - docker push "$FRONTEND_IMAGE_TAG"
 
-# Deploy the backend container
+# Deploy (stop + run) the backend on the host
 deploy_backend:
   stage: deploy
   needs:
     - build_backend
   script:
-    - echo "Waiting for Docker daemon at $DOCKER_HOST…"
-    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
-    - echo "Pulling backend image"
-    - docker pull "$BACKEND_IMAGE_TAG"
-    - echo "Replacing backend container"
+    - echo "Deploying backend container"
     - docker rm -f studyshare-backend-deploy || true
-    - docker run -d --name studyshare-backend-deploy -p 8080:8080 "$BACKEND_IMAGE_TAG"
-    - sleep 10
-    - if [ "$(docker ps -q -f name=studyshare-backend-deploy)" = "" ]; then
-        echo "❌ Backend failed to start" >&2;
-        exit 1;
-      else
-        echo "✅ Backend is running";
-      fi
+    - docker run -d \
+        --name studyshare-backend-deploy \
+        -p 8080:8080 \
+        studyshare-backend:$CI_COMMIT_REF_SLUG
+    - docker ps -f name=studyshare-backend-deploy
 
-# Deploy the frontend container
+# Deploy (stop + run) the frontend on the host
 deploy_frontend:
   stage: deploy
   needs:
     - build_frontend
   script:
-    - echo "Waiting for Docker daemon at $DOCKER_HOST…"
-    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done'
-    - echo "Pulling frontend image"
-    - docker pull "$FRONTEND_IMAGE_TAG"
-    - echo "Replacing frontend container"
+    - echo "Deploying frontend container"
     - docker rm -f studyshare-frontend-deploy || true
-    - docker run -d --name studyshare-frontend-deploy -p 5173:80 "$FRONTEND_IMAGE_TAG"
-    - sleep 5
-    - if [ "$(docker ps -q -f name=studyshare-frontend-deploy)" = "" ]; then
-        echo "❌ Frontend failed to start" >&2;
-        exit 1;
-      else
-        echo "✅ Frontend is running";
-      fi
+    - docker run -d \
+        --name studyshare-frontend-deploy \
+        -p 5173:80 \
+        studyshare-frontend:$CI_COMMIT_REF_SLUG
+    - docker ps -f name=studyshare-frontend-deploy
