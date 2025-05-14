@@ -3,45 +3,48 @@ stages:
   - deploy
 
 default:
-  image: docker:20.10.16        # Docker CLI
+  image: docker:20.10.16
   tags:
     - docker
-variables:
-
-  DOCKER_HOST: "unix:///var/run/docker.sock"
-  HTTP_PROXY: "http://proxy.hof-university.de:3128"
-  HTTPS_PROXY: "http://proxy.hof-university.de:3128"
-  NO_PROXY: "localhost,127.0.0.1"
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    HTTP_PROXY: "http://proxy.hof-university.de:3128"
+    HTTPS_PROXY: "http://proxy.hof-university.de:3128"
+    NO_PROXY: "localhost,127.0.0.1"
 
 build_backend:
   stage: build
   script:
     - docker info
-    - echo "Building backend image studyshare-backend:$CI_COMMIT_REF_SLUG"
-    - docker build -t studyshare-backend:$CI_COMMIT_REF_SLUG -f backend/Dockerfile backend/
-
+    - echo "Building backend image"
+    - cd backend
+    - docker build -t "studyshare-backend:$CI_COMMIT_REF_SLUG" .
+    
 build_frontend:
   stage: build
+  variables:
+    VITE_API_URL_GITLAB_CI: "http://localhost:8080"
   script:
-    - echo "Building frontend image studyshare-frontend:$CI_COMMIT_REF_SLUG"
-    - docker build --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI"  
-        -t studyshare-frontend:$CI_COMMIT_REF_SLUG  
-        -f frontend/Dockerfile frontend/
+    - docker info
+    - echo "Building frontend image"
+    - cd frontend
+    - docker build  
+        --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI"  
+        -t "studyshare-frontend:$CI_COMMIT_REF_SLUG"  
+        .
 
 deploy_backend:
   stage: deploy
   needs: [build_backend]
   script:
-    - echo "Deploying backend"
     - docker rm -f studyshare-backend-deploy || true
-    - docker run -d --name studyshare-backend-deploy -p 8080:8080 studyshare-backend:$CI_COMMIT_REF_SLUG
+    - docker run -d --name studyshare-backend-deploy -p 8080:8080 "studyshare-backend:$CI_COMMIT_REF_SLUG"
     - docker ps -f name=studyshare-backend-deploy
 
 deploy_frontend:
   stage: deploy
   needs: [build_frontend]
   script:
-    - echo "Deploying frontend"
     - docker rm -f studyshare-frontend-deploy || true
-    - docker run -d --name studyshare-frontend-deploy -p 5173:80 studyshare-frontend:$CI_COMMIT_REF_SLUG
+    - docker run -d --name studyshare-frontend-deploy -p 5173:80 "studyshare-frontend:$CI_COMMIT_REF_SLUG"
     - docker ps -f name=studyshare-frontend-deploy
