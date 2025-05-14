@@ -16,6 +16,7 @@ variables:
 build_backend:
   stage: build
   script:
+    - docker info
     - echo "Building backend image studyshare-backend:$CI_COMMIT_REF_SLUG"
     - docker build -t studyshare-backend:$CI_COMMIT_REF_SLUG -f backend/Dockerfile backend/
 
