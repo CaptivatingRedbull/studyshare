@@ -8,7 +8,8 @@ default:
   image: docker:20.10.16-git # Use a Docker image that has Git and Docker client
   services:
     - name: docker:20.10.16-dind
-      alias: docker # Alias for the dind service (TLS will be enabled by default)
+      alias: docker # Alias for the dind service
+      command: ["--host=tcp://0.0.0.0:2375", "--tls=false"] # Run DinD without TLS on port 2375
   tags:
     - docker # Ensure your GitLab runner has this tag
 
@@ -18,11 +19,9 @@ variables:
   FRONTEND_IMAGE_TAG: $CI_REGISTRY_IMAGE/studyshare-frontend:$CI_COMMIT_REF_SLUG
   VITE_API_URL_GITLAB_CI: "http://localhost:8080" # Adjust if network setup changes
 
-  # Configure Docker client to connect to the dind service over TLS
-  DOCKER_HOST: "tcp://docker:2376"
-  DOCKER_TLS_CERTDIR: "/certs" # Runner mounts dind client certs here
-  DOCKER_TLS_VERIFY: "1"      # Enforce TLS verification
-  DOCKER_CERT_PATH: "/certs/client" # Often used by docker client
+  # Configure Docker client to connect to the dind service (non-TLS)
+  DOCKER_HOST: "tcp://docker:2375"
+  # DOCKER_TLS_CERTDIR and DOCKER_TLS_VERIFY are not needed for non-TLS
 
   # Proxy configuration for git and other tools within the job environment
   HTTP_PROXY: "http://proxy.hof-university.de:3128"
@@ -34,7 +33,7 @@ variables:
   GIT_DEPTH: "20"
   GIT_TRACE: "1"
   GIT_CURL_VERBOSE: "1"
-  GIT_SSL_NO_VERIFY: "false"
+  GIT_SSL_NO_VERIFY: "false" # Should be false for security
 
 # Job to build the backend Docker image
 build_backend:
@@ -42,8 +41,9 @@ build_backend:
   before_script:
     # Configure git to use the CA cert provided by GitLab runner for the instance
     - if [ -n "$CI_SERVER_TLS_CA_FILE" ]; then echo "Configuring git with CA file $CI_SERVER_TLS_CA_FILE"; git config --global http.sslCAInfo "$CI_SERVER_TLS_CA_FILE"; else echo "CI_SERVER_TLS_CA_FILE not set"; fi
-    - echo "Waiting for Docker daemon..."
-    - timeout 30s sh -c 'until docker info; do echo -n "."; sleep 1; done' # Wait for dind
+    - echo "Waiting for Docker daemon at $DOCKER_HOST..."
+    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done' # Wait for dind
+    - echo "Docker daemon is ready!"
     - docker info # Check if Docker client can connect to dind
     - echo "Logging into GitLab Registry $CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
@@ -58,8 +58,9 @@ build_frontend:
   stage: build
   before_script:
     - if [ -n "$CI_SERVER_TLS_CA_FILE" ]; then echo "Configuring git with CA file $CI_SERVER_TLS_CA_FILE"; git config --global http.sslCAInfo "$CI_SERVER_TLS_CA_FILE"; else echo "CI_SERVER_TLS_CA_FILE not set"; fi
-    - echo "Waiting for Docker daemon..."
-    - timeout 30s sh -c 'until docker info; do echo -n "."; sleep 1; done' # Wait for dind
+    - echo "Waiting for Docker daemon at $DOCKER_HOST..."
+    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done' # Wait for dind
+    - echo "Docker daemon is ready!"
     - docker info
     - echo "Logging into GitLab Registry $CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
@@ -79,8 +80,9 @@ deploy_backend:
     - job: build_backend
       artifacts: false
   before_script:
-    - echo "Waiting for Docker daemon..."
-    - timeout 30s sh -c 'until docker info; do echo -n "."; sleep 1; done' # Wait for dind
+    - echo "Waiting for Docker daemon at $DOCKER_HOST..."
+    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done' # Wait for dind
+    - echo "Docker daemon is ready!"
     - docker info
     - echo "Logging into GitLab Registry $CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
@@ -105,8 +107,9 @@ deploy_frontend:
     - job: build_frontend
       artifacts: false
   before_script:
-    - echo "Waiting for Docker daemon..."
-    - timeout 30s sh -c 'until docker info; do echo -n "."; sleep 1; done' # Wait for dind
+    - echo "Waiting for Docker daemon at $DOCKER_HOST..."
+    - timeout 60s sh -c 'until docker info > /dev/null 2>&1; do echo -n "."; sleep 1; done' # Wait for dind
+    - echo "Docker daemon is ready!"
     - docker info
     - echo "Logging into GitLab Registry $CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
