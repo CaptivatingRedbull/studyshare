@@ -22,15 +22,14 @@ build_backend:
 
 build_frontend:
   stage: build
-  # <— one indentation less than default!
   variables:
     VITE_API_URL_GITLAB_CI: "http://localhost:8080"
   script:
     - docker info
     - echo "Building frontend image"
     - cd frontend
-    - docker build --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI"  
-        -t studyshare-frontend:$CI_COMMIT_REF_SLUG .
+    - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG .
+        --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI"
 
 deploy_backend:
   stage: deploy
