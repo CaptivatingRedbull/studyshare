@@ -35,6 +35,19 @@ build_frontend_assets:
       - frontend/dist
     expire_in: 1h
 
+build_frontend:
+  stage: build
+  script:
+    - |
+      cat > frontend/.env.production <<EOF
+      VITE_API_URL=$VITE_API_URL_GITLAB_CI
+      EOF
+    - cd frontend
+    - npm ci
+    - npm run build
+    - cd ..
+    - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG -f frontend/Dockerfile .
+
 deploy_backend:
   stage: deploy
   needs:
