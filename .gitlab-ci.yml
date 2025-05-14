@@ -18,33 +18,34 @@ build_backend:
     - docker info
     - echo "Building backend image"
     - cd backend
-    - docker build -t "studyshare-backend:$CI_COMMIT_REF_SLUG" .
-    
+    - docker build -t studyshare-backend:$CI_COMMIT_REF_SLUG .
+
 build_frontend:
   stage: build
+  # <— one indentation less than default!
   variables:
     VITE_API_URL_GITLAB_CI: "http://localhost:8080"
   script:
     - docker info
     - echo "Building frontend image"
     - cd frontend
-    - docker build  
-        --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI"  
-        -t "studyshare-frontend:$CI_COMMIT_REF_SLUG"  
-        .
+    - docker build --build-arg VITE_API_URL="$VITE_API_URL_GITLAB_CI"  
+        -t studyshare-frontend:$CI_COMMIT_REF_SLUG .
 
 deploy_backend:
   stage: deploy
-  needs: [build_backend]
+  needs:
+    - build_backend
   script:
     - docker rm -f studyshare-backend-deploy || true
-    - docker run -d --name studyshare-backend-deploy -p 8080:8080 "studyshare-backend:$CI_COMMIT_REF_SLUG"
+    - docker run -d --name studyshare-backend-deploy -p 8080:8080 studyshare-backend:$CI_COMMIT_REF_SLUG
     - docker ps -f name=studyshare-backend-deploy
 
 deploy_frontend:
   stage: deploy
-  needs: [build_frontend]
+  needs:
+    - build_frontend
   script:
     - docker rm -f studyshare-frontend-deploy || true
-    - docker run -d --name studyshare-frontend-deploy -p 5173:80 "studyshare-frontend:$CI_COMMIT_REF_SLUG"
+    - docker run -d --name studyshare-frontend-deploy -p 5173:80 studyshare-frontend:$CI_COMMIT_REF_SLUG
     - docker ps -f name=studyshare-frontend-deploy
