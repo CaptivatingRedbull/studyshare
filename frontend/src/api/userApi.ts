@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import { apiClient } from "./apiClient";
 import type { UserResponse, UserUpdateRequest } from "../lib/types";
 
 const USERS_BASE_URL = "/api/users";

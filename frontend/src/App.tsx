@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate, Outlet, Link } from "react-router-dom";
 import "./App.css";
 import { LandingPage } from "./pages/LandingPage";
-import Dashboard from "./dashboard"; // ggf. Pfad anpassen
+import { dashboard } from "./dashboard"; // ggf. Pfad anpassen
 
 // Layouts
 function PublicLayout() {
@@ -32,11 +32,11 @@ function RegisterPage() {
 
 
 function ExchangePage() {
-  return <Dashboard />;
+  return dashboard();
 }
 
 
-export default function App() {
+export function App() {
   return (
     <Routes>
       {/* Public */}

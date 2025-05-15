@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import { apiClient } from "./apiClient";
 import type { Course, CourseCreateRequest, CourseUpdateRequest } from "../lib/types";
 
 const COURSES_BASE_URL = "/api/courses";

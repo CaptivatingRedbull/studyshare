@@ -42,8 +42,6 @@ export function LoginForm({
       const response = await apiLogin(loginData);
       contextLogin(response);
       
-      
-
       toastSuccess({message: `Willkommen zurück, ${response.username}!`, title: "Erfolgreich angemeldet!"}); 
       console.log("Erfolgreich angemeldet: ", loginInfo)
 

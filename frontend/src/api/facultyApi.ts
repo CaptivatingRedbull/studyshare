@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import { apiClient } from "./apiClient";
 import type { Faculty, FacultyCreateRequest, FacultyUpdateRequest } from "../lib/types";
 
 const FACULTIES_BASE_URL = "/api/faculties";

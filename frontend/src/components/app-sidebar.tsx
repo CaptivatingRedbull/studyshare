@@ -1,4 +1,6 @@
-import * as React from "react"
+import * as React from "react";
+import navData from "@/data/dashboard/NavMain.json";
+
 import {
   IconCamera,
   IconChartBar,
@@ -12,11 +14,11 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -25,7 +27,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import { useAuth } from "@/context/AuthContext";
 
 const data = {
   user: {
@@ -124,6 +127,30 @@ const data = {
       icon: IconSearch,
     },
   ],
+};
+
+const iconMap: Record<string, React.FC<any>> = {
+  IconDashboard,
+  IconListDetails,
+  IconChartBar,
+  IconFolder,
+  IconUsers,
+};
+
+function NavProvider() {
+  const { user } = useAuth();
+  const { adminNavMain, studentNavMain } = navData;
+  const nav = !user
+    ? []
+    : user.role === "ADMIN"
+    ? adminNavMain
+    : user.role === "STUDENT"
+    ? studentNavMain
+    : [];
+  return nav.map((item: any) => ({
+    ...item,
+    icon: iconMap[item.icon] || undefined,
+  }));
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -145,12 +172,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={NavProvider()} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

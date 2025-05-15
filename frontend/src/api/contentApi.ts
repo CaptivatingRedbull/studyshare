@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import { apiClient } from "./apiClient";
 import type { Content, ContentCreateRequest, ContentUpdateRequest } from "../lib/types";
 
 const CONTENTS_BASE_URL = "/api/contents";
