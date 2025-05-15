@@ -21,9 +21,9 @@ build_backend:
     - docker build -t studyshare-backend:$CI_COMMIT_REF_SLUG .
 
 build_frontend:
-  image: node:18
   stage: build
   script:
+    - docker info
     - echo "Building frontend image"
     - cd frontend
     - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG -f frontend/Dockerfile .
