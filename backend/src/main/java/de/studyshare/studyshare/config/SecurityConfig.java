@@ -18,6 +18,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import de.studyshare.studyshare.service.JpaUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
