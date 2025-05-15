@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 
 import de.studyshare.studyshare.service.JpaUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,26 +31,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(authorizeRequests
-                        -> authorizeRequests
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(sessionManagement
-                        -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(exceptionHandling
-                        -> exceptionHandling.authenticationEntryPoint((request, response, authException) -> {
-                    String expired = (String) request.getAttribute("expired");
-                    if (expired != null) {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT Token has expired: " + expired);
-                    } else {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Access is denied");
-                    }
-                })
-                );
+            .cors().and()
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(sessionManagement
+                    -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(exceptionHandling
+                    -> exceptionHandling.authenticationEntryPoint((request, response, authException) -> {
+                String expired = (String) request.getAttribute("expired");
+                if (expired != null) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT Token has expired: " + expired);
+                } else {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Access is denied");
+                }
+            })
+            );
         return http.build();
     }
 
