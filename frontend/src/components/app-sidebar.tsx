@@ -34,22 +34,22 @@ const data = {
   },
   navMain: [
     {
-      title: "idk",
+      title: "Inhalte durchstöbern",
       url: "#",
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
+      title: "Gemeldeten Inhalte",
       url: "#",
       icon: IconListDetails,
     },
     {
-      title: "Analytics",
+      title: "User Verwalten",
       url: "#",
       icon: IconChartBar,
     },
     {
-      title: "Projects",
+      title: "Kurse Struktur Verwalten",
       url: "#",
       icon: IconFolder,
     },

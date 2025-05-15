@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, Outlet, Link } from "react-router-dom";
 import "./App.css";
 import { LandingPage } from "./pages/LandingPage";
+import Dashboard from "./dashboard"; // ggf. Pfad anpassen
 
 // Layouts
 function PublicLayout() {
@@ -28,9 +29,12 @@ function RegisterPage() {
   return <div>Registration Form Here</div>;
 }
 
+
+
 function ExchangePage() {
-  return <div>Upload/download UI here</div>;
+  return <Dashboard />;
 }
+
 
 export default function App() {
   return (
