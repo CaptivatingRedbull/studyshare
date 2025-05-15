@@ -12,6 +12,7 @@ variables:
   HTTPS_PROXY: "http://proxy.hof-university.de:3128"
   NO_PROXY: "localhost,127.0.0.1"
 
+
 build_backend:
   stage: build
   script:
@@ -19,6 +20,9 @@ build_backend:
     - echo "Building backend image"
     - cd backend
     - docker build -t studyshare-backend:$CI_COMMIT_REF_SLUG .
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+
 
 build_frontend:
   stage: build
@@ -26,8 +30,9 @@ build_frontend:
     - docker info
     - echo "Building frontend image"
     - cd frontend
-    # add this just before your `npm run build` in Dockerfile
     - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG .
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
 
 deploy_backend:
   stage: deploy
@@ -37,6 +42,8 @@ deploy_backend:
     - docker rm -f studyshare-backend-deploy || true
     - docker run -d --name studyshare-backend-deploy -p 8080:8080 studyshare-backend:$CI_COMMIT_REF_SLUG
     - docker ps -f name=studyshare-backend-deploy
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
 
 deploy_frontend:
   stage: deploy
@@ -46,3 +53,5 @@ deploy_frontend:
     - docker rm -f studyshare-frontend-deploy || true
     - docker run -d --name studyshare-frontend-deploy -p 5173:80 studyshare-frontend:$CI_COMMIT_REF_SLUG
     - docker ps -f name=studyshare-frontend-deploy
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
