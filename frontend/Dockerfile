@@ -16,8 +16,10 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
-
+RUN ls -al /app/src/api
 RUN npm run build
+# add this just before your `npm run build` in Dockerfile
+
 
 # Stage 2: Serve the static files with Nginx
 FROM nginx:1.25-alpine

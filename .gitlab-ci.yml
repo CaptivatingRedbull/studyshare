@@ -26,6 +26,7 @@ build_frontend:
     - docker info
     - echo "Building frontend image"
     - cd frontend
+    # add this just before your `npm run build` in Dockerfile
     - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG .
 
 deploy_backend:
