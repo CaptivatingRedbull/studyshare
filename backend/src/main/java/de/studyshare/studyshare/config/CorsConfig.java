@@ -15,7 +15,7 @@ public class CorsConfig {
   @Primary
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOrigins(List.of("http://localhost:5173")); // your front-end origin
+    config.setAllowedOrigins(List.of("http://192.168.67.63:5173")); // your front-end origin
     config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
     config.setAllowedHeaders(List.of("*"));
     config.setAllowCredentials(true);
