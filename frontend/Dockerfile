@@ -16,6 +16,7 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
+COPY .env .env
 RUN ls -al /app/src/api
 RUN npm run build
 # add this just before your `npm run build` in Dockerfile
