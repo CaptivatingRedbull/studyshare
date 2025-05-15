@@ -26,9 +26,6 @@ build_frontend:
   script:
     - echo "Building frontend image"
     - cd frontend
-    - npm install
-    - VITE_API_URL=http://backend:8080 npm run build
-    - cd ..
     - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG -f frontend/Dockerfile .
 
 deploy_backend:
