@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import { apiClient } from "./apiClient";
 import type { LoginRequest, LoginResponse, RegisterRequest } from "../lib/types";
 
 const AUTH_BASE_URL = "/api/auth";

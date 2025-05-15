@@ -10,7 +10,7 @@ if (!API_BASE_URL) {
 /**
  * Creates an Axios instance with a base URL.
  */
-const apiClient: AxiosInstance = axios.create({
+export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
 });
 
@@ -69,5 +69,3 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export default apiClient;

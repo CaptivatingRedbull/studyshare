@@ -1,0 +1,46 @@
+{
+  "adminNavMain": [
+    {
+      "title": "Inhalte durchstöbern",
+      "url": "/exchange/browse",
+      "icon": "IconBinoculars"
+    },
+    {
+      "title": "Meine Inhalte",
+      "url": "/exchange/my-content",
+      "icon": "IconFolderOpen"
+    },
+    {
+      "title": "Gemeldeten Inhalte",
+      "url": "/exchange/admin/reported/content",
+      "icon": "IconFileAlert"
+    },
+    {
+      "title": "Gemeldeten Bewertungen",
+      "url": "/exchange/admin/reported/reviews",
+      "icon": "IconMessageReport"
+    },
+    {
+      "title": "User Verwalten",
+      "url": "/exchange/admin/users",
+      "icon": "IconReplaceUser"
+    },
+    {
+      "title": "Kurse Struktur Verwalten",
+      "url": "/exchange/admin/structure",
+      "icon": "IconListTree"
+    }
+  ],
+  "studentNavMain": [
+    {
+      "title": "Inhalte durchstöbern",
+      "url": "/exchange/browse",
+      "icon": "IconBinoculars"
+    },
+    {
+      "title": "Meine Inhalte",
+      "url": "/exchange/my-content",
+      "icon": "IconFolderOpen"
+    }
+  ]
+}

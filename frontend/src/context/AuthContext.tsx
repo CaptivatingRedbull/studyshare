@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import type { UserResponse, LoginResponse } from '../lib/types'; // Assuming UserResponse includes username and other details
+import { getUserByUsername } from '@/api/userApi';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -38,19 +39,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(false); // Finished loading auth state
   }, []);
 
-  const loginContext = (data: LoginResponse) => {
-    sessionStorage.setItem("jwt", data.token);
-    // Potentially fetch user details here if not included in LoginResponse,
-    // or if LoginResponse includes user details, store them.
-    // For now, let's assume LoginResponse might include basic user info or we set it separately.
-    // This example just sets a placeholder user based on username.
-    const loggedInUser: UserResponse = { username: data.username, id: 0, firstName: '', lastName: '', email: '', role: 'STUDENT' }; // Adjust as per your UserResponse structure
-    sessionStorage.setItem("user", JSON.stringify(loggedInUser));
+  const loginContext = async (data: LoginResponse) => {
+  sessionStorage.setItem("jwt", data.token);
 
-    setToken(data.token);
-    setUser(loggedInUser);
-    setIsAuthenticated(true);
-  };
+  try {
+    // Fetch user details from backend
+    const userDetails = await getUserByUsername(data.username);
+    sessionStorage.setItem("user", JSON.stringify(userDetails));
+    setUser(userDetails);
+  } catch (e) {
+    // Fallback if fetch fails
+    const fallbackUser: UserResponse = { username: data.username, id: 0, firstName: '', lastName: '', email: '', role: 'STUDENT' };
+    sessionStorage.setItem("user", JSON.stringify(fallbackUser));
+    setUser(fallbackUser);
+    console.error("Failed to fetch user details:", e);
+  }
+
+  setToken(data.token);
+  setIsAuthenticated(true);
+};
 
   const logoutContext = () => {
     sessionStorage.removeItem("jwt");
