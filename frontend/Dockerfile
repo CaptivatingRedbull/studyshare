@@ -3,7 +3,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Declare the build argument that can be passed during `docker build`
-ARG VITE_API_URL
+ARG VITE_API_URL="http://localhost:8080"
 
 # Set the build argument as an environment variable for the build process
 # Vite will pick up VITE_ prefixed env vars during the build
@@ -16,7 +16,6 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
-COPY .env .env
 RUN ls -al /app/src/api
 RUN npm run build
 # add this just before your `npm run build` in Dockerfile
