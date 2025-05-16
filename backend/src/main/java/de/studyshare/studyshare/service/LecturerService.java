@@ -83,14 +83,18 @@ public class LecturerService {
         }
 
         if (updateRequest.courseIds() != null) {
-            Set<Course> courses = new HashSet<>(courseRepository.findAllById(updateRequest.courseIds()));
-            if (courses.size() != updateRequest.courseIds().size() && !updateRequest.courseIds().isEmpty()) {
-                throw new ResourceNotFoundException("One or more courses not found for the provided IDs during update.");
+            Set<Course> newCourses = new HashSet<>(courseRepository.findAllById(updateRequest.courseIds()));
+
+            for (Course existingCourse : new HashSet<>(lecturer.getCourses())) {
+                if (!newCourses.contains(existingCourse)) {
+                    lecturer.removeCourse(existingCourse);
+                }
             }
 
-            lecturer.getCourses().clear();
-            if (!courses.isEmpty()) {
-                courses.forEach(lecturer::addCourse);
+            for (Course newCourse : newCourses) {
+                if (!lecturer.getCourses().contains(newCourse)) {
+                    lecturer.addCourse(newCourse);
+                }
             }
         }
 
@@ -105,11 +109,11 @@ public class LecturerService {
 
         for (Course course : new HashSet<>(lecturer.getCourses())) {
             course.getLecturers().remove(lecturer);
-
         }
         lecturer.getCourses().clear();
         lecturerRepository.save(lecturer);
 
         lecturerRepository.delete(lecturer);
     }
+
 }

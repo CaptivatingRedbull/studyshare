@@ -20,10 +20,12 @@ public class FacultyService {
 
     private final FacultyRepository facultyRepository;
     private final CourseRepository courseRepository;
+    private final CourseService courseService;
 
-    public FacultyService(FacultyRepository facultyRepository, CourseRepository courseRepository) {
+    public FacultyService(FacultyRepository facultyRepository, CourseRepository courseRepository, CourseService courseService) {
         this.facultyRepository = facultyRepository;
         this.courseRepository = courseRepository;
+        this.courseService =  courseService;
     }
 
     @Transactional
@@ -71,9 +73,8 @@ public class FacultyService {
                 .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", id));
 
         if (courseRepository.existsByFacultyId(id)) {
-            throw new DuplicateResourceException(
-                    "Cannot delete faculty '" + faculty.getName() + "' as it has associated courses. Please reassign or delete them first."
-            );
+            courseRepository.findAllByFacultyId(id)
+                .forEach(course -> courseService.deleteCourse(course.getId()));
         }
         facultyRepository.delete(faculty);
     }
