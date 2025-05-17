@@ -73,17 +73,9 @@ public class ContentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", createRequest.facultyId()));
 
         Lecturer lecturer = null;
-        if (createRequest.lecturerId() != null) {
-            lecturer = lecturerRepository.findById(createRequest.lecturerId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", createRequest.lecturerId()));
-        }
 
         if (!course.getFaculty().getId().equals(faculty.getId())) {
             throw new BadRequestException("The specified course (ID: " + course.getId() + ") does not belong to the specified faculty (ID: " + faculty.getId() + ").");
-        }
-
-        if (lecturer != null && !course.getLecturers().contains(lecturer)) {
-            throw new BadRequestException("The specified lecturer (ID: " + lecturer.getId() + ") is not associated with the specified course (ID: " + course.getId() + ").");
         }
 
         Content content = new Content();
@@ -105,34 +97,21 @@ public class ContentService {
         Content content = contentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Content", "id", id));
 
-        if (updateRequest.contentCategory() != null) {
-            content.setContentCategory(updateRequest.contentCategory());
-        }
-        if (updateRequest.filePath() != null) {
-            content.setFilePath(updateRequest.filePath());
-        }
-        if (updateRequest.title() != null) {
-            content.setTitle(updateRequest.title());
-        }
+        content.setContentCategory(updateRequest.contentCategory());
+        content.setFilePath(updateRequest.filePath());
 
-        if (updateRequest.courseId() != null) {
-            Course newCourse = courseRepository.findById(updateRequest.courseId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Course", "id", updateRequest.courseId()));
-            content.setCourse(newCourse);
+        content.setTitle(updateRequest.title());
 
-        }
-        if (updateRequest.facultyId() != null) {
-            Faculty newFaculty = facultyRepository.findById(updateRequest.facultyId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", updateRequest.facultyId()));
-            content.setFaculty(newFaculty);
-        }
-        if (updateRequest.lecturerId() != null) {
-            Lecturer newLecturer = lecturerRepository.findById(updateRequest.lecturerId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", updateRequest.lecturerId()));
-            content.setLecturer(newLecturer);
-        } else if (updateRequest.lecturerId() == null && content.getLecturer() != null) {
-            content.setLecturer(null);
-        }
+        Course newCourse = courseRepository.findById(updateRequest.courseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Course", "id", updateRequest.courseId()));
+        content.setCourse(newCourse);
+
+        Faculty newFaculty = facultyRepository.findById(updateRequest.facultyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", updateRequest.facultyId()));
+        content.setFaculty(newFaculty);
+        Lecturer newLecturer = lecturerRepository.findById(updateRequest.lecturerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", updateRequest.lecturerId()));
+        content.setLecturer(newLecturer);
 
         if (content.getCourse() != null && !content.getCourse().getFaculty().getId().equals(content.getFaculty().getId())) {
             throw new BadRequestException("The content's course (ID: " + content.getCourse().getId() + ") must belong to the content's faculty (ID: " + content.getFaculty().getId() + ").");
@@ -170,5 +149,19 @@ public class ContentService {
         content.setOutdatedCount(content.getOutdatedCount() + 1);
 
         return ContentDTO.fromEntity(contentRepository.save(content));
+    }
+
+    @Transactional
+    public List<ContentDTO> getContentsByFacultyId(Long facultyId) {
+        return contentRepository.findByFacultyId(facultyId).stream()
+                .map(ContentDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<ContentDTO> getContentsByCourseId(Long courseId) {
+        return contentRepository.findByCourseId(courseId).stream()
+                .map(ContentDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 }
