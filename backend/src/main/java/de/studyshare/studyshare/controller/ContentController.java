@@ -18,7 +18,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import de.studyshare.studyshare.dto.entity.ContentDTO;
 import de.studyshare.studyshare.dto.request.ContentCreateRequest;
 import de.studyshare.studyshare.dto.request.ContentUpdateRequest;
-import de.studyshare.studyshare.exception.BadRequestException;
 import de.studyshare.studyshare.service.ContentService;
 import jakarta.validation.Valid;
 
@@ -47,28 +46,23 @@ public class ContentController {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ContentDTO> createContent(@Valid @RequestBody ContentCreateRequest createRequest) {
-        try {
-            ContentDTO createdContent = contentService.createContent(createRequest);
-            URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                    .path("/{id}")
-                    .buildAndExpand(createdContent.id())
-                    .toUri();
-            return ResponseEntity.created(location).body(createdContent);
-        } catch (Exception e) {
-            throw new BadRequestException("Error creating content: " + e.getMessage());
-        }
+
+        ContentDTO createdContent = contentService.createContent(createRequest);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdContent.id())
+                .toUri();
+        return ResponseEntity.created(location).body(createdContent);
 
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @contentSecurityService.isOwner(authentication, #id)")
-    public ResponseEntity<ContentDTO> updateContent(@PathVariable Long id, @Valid @RequestBody ContentUpdateRequest updateRequest) {
-        try {
-            ContentDTO updatedContent = contentService.updateContent(id, updateRequest);
-            return ResponseEntity.ok(updatedContent);
-        } catch (Exception e) {
-            throw new BadRequestException("Error updating content: " + e.getMessage());
-        }
+    public ResponseEntity<ContentDTO> updateContent(@PathVariable Long id,
+            @Valid @RequestBody ContentUpdateRequest updateRequest) {
+
+        ContentDTO updatedContent = contentService.updateContent(id, updateRequest);
+        return ResponseEntity.ok(updatedContent);
 
     }
 
