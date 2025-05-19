@@ -18,6 +18,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import de.studyshare.studyshare.dto.entity.CourseDTO;
 import de.studyshare.studyshare.dto.request.CourseCreateRequest;
 import de.studyshare.studyshare.dto.request.CourseUpdateRequest;
+import de.studyshare.studyshare.exception.BadRequestException;
 import de.studyshare.studyshare.service.CourseService;
 import jakarta.validation.Valid;
 
@@ -46,19 +47,29 @@ public class CourseController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CourseDTO> createCourse(@Valid @RequestBody CourseCreateRequest createRequest) {
-        CourseDTO createdCourse = courseService.createCourse(createRequest);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(createdCourse.id())
-                .toUri();
-        return ResponseEntity.created(location).body(createdCourse);
+        try {
+            CourseDTO createdCourse = courseService.createCourse(createRequest);
+            URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                    .path("/{id}")
+                    .buildAndExpand(createdCourse.id())
+                    .toUri();
+            return ResponseEntity.created(location).body(createdCourse);
+        } catch (Exception e) {
+            throw new BadRequestException("Error creating course: " + e.getMessage());
+        }
+
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id, @Valid @RequestBody CourseUpdateRequest updateRequest) {
-        CourseDTO updatedCourse = courseService.updateCourse(id, updateRequest);
-        return ResponseEntity.ok(updatedCourse);
+    public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id,
+            @Valid @RequestBody CourseUpdateRequest updateRequest) {
+        try {
+            CourseDTO updatedCourse = courseService.updateCourse(id, updateRequest);
+            return ResponseEntity.ok(updatedCourse);
+        } catch (Exception e) {
+            throw new BadRequestException("Error updating course: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -77,7 +88,8 @@ public class CourseController {
 
     @DeleteMapping("/{courseId}/lecturers/{lecturerId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CourseDTO> removeLecturerFromCourse(@PathVariable Long courseId, @PathVariable Long lecturerId) {
+    public ResponseEntity<CourseDTO> removeLecturerFromCourse(@PathVariable Long courseId,
+            @PathVariable Long lecturerId) {
         CourseDTO updatedCourse = courseService.removeLecturerFromCourse(courseId, lecturerId);
         return ResponseEntity.ok(updatedCourse);
     }

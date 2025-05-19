@@ -33,15 +33,9 @@ import de.studyshare.studyshare.repository.UserRepository;
 import de.studyshare.studyshare.service.JpaUserDetailsService;
 import de.studyshare.studyshare.service.JwtUtil;
 
-
-
-
-
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class ContentControllerTest {
-
     @LocalServerPort
     private int port;
 
@@ -85,13 +79,18 @@ class ContentControllerTest {
         baseUrl = "http://localhost:" + port + "/api/content";
 
         // Setup test data
-        testUser = new User("Test", "User", "testuser@example.com", "testuser", passwordEncoder.encode("password"), Role.STUDENT);
+        testUser = new User("Test", "User", "testuser@example.com", "testuser",
+                passwordEncoder.encode("password"), Role.STUDENT);
         userRepository.save(testUser);
-        String testUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(testUser.getUsername()));
-        this.testUserJwt = testUserJwt;  //dont know why this is needed but when assigning it directly it is null
-        adminUser = new User("Admin", "User", "admin@example.com", "admin", passwordEncoder.encode("adminpass"), Role.ADMIN);
+        String testUserJwt = jwtUtil
+                .generateToken(jpaUserDetailsService.loadUserByUsername(testUser.getUsername()));
+        this.testUserJwt = testUserJwt; // dont know why this is needed but when assigning it directly it is
+                                        // null
+        adminUser = new User("Admin", "User", "admin@example.com", "admin", passwordEncoder.encode("adminpass"),
+                Role.ADMIN);
         userRepository.save(adminUser);
-        String adminUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(adminUser.getUsername()));
+        String adminUserJwt = jwtUtil
+                .generateToken(jpaUserDetailsService.loadUserByUsername(adminUser.getUsername()));
         this.adminUserJwt = adminUserJwt;
 
         faculty = new Faculty("Engineering");
@@ -116,23 +115,24 @@ class ContentControllerTest {
         return headers;
     }
 
+    @SuppressWarnings("null")
     @Test
     @DisplayName("Should create and fetch content by ID")
     void createAndGetContentById() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF, // contentCategory
-                course.getId(),      // courseId
-                lecturer.getId(),    // lecturerId
-                faculty.getId(),     // facultyId
+                course.getId(), // courseId
+                lecturer.getId(), // lecturerId
+                faculty.getId(), // facultyId
                 "/path/to/file.pdf", // filePath
-                "Lecture 1"          // title
+                "Lecture 1" // title
         );
-        
+
         HttpHeaders headers = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequest = new HttpEntity<>(req, headers);
 
         ResponseEntity<ContentDTO> createResp = restTemplate
-            .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
 
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         ContentDTO created = createResp.getBody();
@@ -141,13 +141,15 @@ class ContentControllerTest {
 
         HttpEntity<Void> userAuthEntity = new HttpEntity<>(jwtHeaders(testUserJwt));
         ResponseEntity<ContentDTO> getResp = restTemplate
-            .exchange(baseUrl + "/" + created.id(), HttpMethod.GET, userAuthEntity, ContentDTO.class);
+                .exchange(baseUrl + "/" + created.id(), HttpMethod.GET, userAuthEntity,
+                        ContentDTO.class);
 
         assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(getResp.getBody()).isNotNull();
         assertThat(getResp.getBody().title()).isEqualTo("Lecture 1");
     }
 
+    @SuppressWarnings("null")
     @Test
     @DisplayName("Should update content as admin")
     void updateContent_asAdmin() {
@@ -157,9 +159,8 @@ class ContentControllerTest {
                 lecturer.getId(),
                 faculty.getId(),
                 "/path/to/file2.pdf",
-                "Lecture 2"
-        );
-        
+                "Lecture 2");
+
         HttpEntity<ContentCreateRequest> createReqAuth = new HttpEntity<>(req, jwtHeaders(adminUserJwt));
         ResponseEntity<ContentDTO> createResp = restTemplate
                 .exchange(baseUrl, HttpMethod.POST, createReqAuth, ContentDTO.class);
@@ -173,12 +174,13 @@ class ContentControllerTest {
                 lecturer.getId(),
                 faculty.getId(),
                 "/path/to/file2_updated.pdf",
-                "Lecture 2 Updated"
-        );
+                "Lecture 2 Updated");
         HttpEntity<ContentUpdateRequest> updateReqAuth = new HttpEntity<>(updateReq, jwtHeaders(adminUserJwt));
 
+        @SuppressWarnings("null")
         ResponseEntity<ContentDTO> updateResp = restTemplate
-                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.PUT, updateReqAuth, ContentDTO.class);
+                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.PUT, updateReqAuth,
+                        ContentDTO.class);
 
         assertThat(updateResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(updateResp.getBody().title()).isEqualTo("Lecture 2 Updated");
@@ -193,28 +195,31 @@ class ContentControllerTest {
                 lecturer.getId(),
                 faculty.getId(),
                 "/path/to/file3.pdf",
-                "Lecture 3"
-        );
+                "Lecture 3");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
         ResponseEntity<ContentDTO> createResp = restTemplate
-            .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
 
         HttpEntity<Void> adminAuthEntity = new HttpEntity<>(jwtHeaders(adminUserJwt));
+        @SuppressWarnings("null")
         ResponseEntity<Void> delResp = restTemplate
-                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.DELETE, adminAuthEntity, Void.class);
+                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.DELETE, adminAuthEntity,
+                        Void.class);
 
         assertThat(delResp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
-
+        @SuppressWarnings("null")
         ResponseEntity<String> getResp = restTemplate
-                .exchange(baseUrl + "/" + createResp.getBody().id(),HttpMethod.GET, adminAuthEntity,  String.class);
+                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.GET, adminAuthEntity,
+                        String.class);
 
         assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
+    @SuppressWarnings("null")
     @Test
     @DisplayName("Should increment report count")
     void reportContent() {
@@ -224,25 +229,26 @@ class ContentControllerTest {
                 lecturer.getId(),
                 faculty.getId(),
                 "/path/to/file4.pdf",
-                "Lecture 4"
-        );
+                "Lecture 4");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
         ResponseEntity<ContentDTO> createResp = restTemplate
-            .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
 
-
         HttpEntity<Void> userAuthEntity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        @SuppressWarnings("null")
         ResponseEntity<ContentDTO> reportResp = restTemplate
-                .exchange(baseUrl + "/" + createResp.getBody().id() + "/report", HttpMethod.POST, userAuthEntity, ContentDTO.class);
+                .exchange(baseUrl + "/" + createResp.getBody().id() + "/report", HttpMethod.POST,
+                        userAuthEntity, ContentDTO.class);
 
         assertThat(reportResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(reportResp.getBody()).isNotNull();
         assertThat(reportResp.getBody().reportedCount()).isEqualTo(1);
     }
 
+    @SuppressWarnings("null")
     @Test
     @DisplayName("Should increment outdated count")
     void markContentAsOutdated() {
@@ -252,19 +258,20 @@ class ContentControllerTest {
                 lecturer.getId(),
                 faculty.getId(),
                 "/path/to/file5.pdf",
-                "Lecture 5"
-        );
+                "Lecture 5");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
         ResponseEntity<ContentDTO> createResp = restTemplate
-            .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
         assertThat(createResp.getBody().id()).isNotNull();
-        
+
         HttpEntity<Void> userAuthEntity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        @SuppressWarnings("null")
         ResponseEntity<ContentDTO> outdatedResp = restTemplate
-                .exchange(baseUrl + "/" + createResp.getBody().id() + "/mark-outdated", HttpMethod.POST, userAuthEntity, ContentDTO.class);
+                .exchange(baseUrl + "/" + createResp.getBody().id() + "/mark-outdated", HttpMethod.POST,
+                        userAuthEntity, ContentDTO.class);
 
         assertThat(outdatedResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(outdatedResp.getBody()).isNotNull();
@@ -280,16 +287,17 @@ class ContentControllerTest {
                 lecturer.getId(),
                 faculty.getId(),
                 "/path/to/file6.pdf",
-                "Lecture 6"
-        );
+                "Lecture 6");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
         ResponseEntity<ContentDTO> createResp = restTemplate
-            .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
 
-        User otherUser = new User("Other", "User", "other@example.com", "other", passwordEncoder.encode("otherpass"), Role.STUDENT);
+        User otherUser = new User("Other", "User", "other@example.com", "other",
+                passwordEncoder.encode("otherpass"), Role.STUDENT);
         userRepository.save(otherUser);
-        String otherUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(otherUser.getUsername()));
+        String otherUserJwt = jwtUtil
+                .generateToken(jpaUserDetailsService.loadUserByUsername(otherUser.getUsername()));
 
         ContentUpdateRequest updateReq = new ContentUpdateRequest(
                 ContentCategory.PDF,
@@ -297,16 +305,18 @@ class ContentControllerTest {
                 lecturer.getId(),
                 faculty.getId(),
                 "/path/to/file6_updated.pdf",
-                "Lecture 6 Updated"
-        );
+                "Lecture 6 Updated");
         HttpEntity<ContentUpdateRequest> entity = new HttpEntity<>(updateReq, jwtHeaders(otherUserJwt));
 
+        @SuppressWarnings("null")
         ResponseEntity<String> updateResp = restTemplate
-                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.PUT, entity, String.class);
+                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.PUT, entity,
+                        String.class);
 
         assertThat(updateResp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
+    @SuppressWarnings("null")
     @Test
     @DisplayName("Should not allow delete by non-owner non-admin")
     void deleteContent_notOwnerForbidden() {
@@ -316,23 +326,26 @@ class ContentControllerTest {
                 lecturer.getId(),
                 faculty.getId(),
                 "/path/to/file7.pdf",
-                "Lecture 7"
-        );
+                "Lecture 7");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
         ResponseEntity<ContentDTO> createResp = restTemplate
-            .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
         assertThat(createResp.getBody().id()).isNotNull();
 
-        User otherUser = new User("Other2", "User", "other2@example.com", "other2", passwordEncoder.encode("other2pass"), Role.STUDENT);
+        User otherUser = new User("Other2", "User", "other2@example.com", "other2",
+                passwordEncoder.encode("other2pass"), Role.STUDENT);
         userRepository.save(otherUser);
-        String otherUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(otherUser.getUsername()));
+        String otherUserJwt = jwtUtil
+                .generateToken(jpaUserDetailsService.loadUserByUsername(otherUser.getUsername()));
 
         HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(otherUserJwt));
+        @SuppressWarnings("null")
         ResponseEntity<String> delResp = restTemplate
-                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.DELETE, entity, String.class);
+                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.DELETE, entity,
+                        String.class);
 
         assertThat(delResp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
@@ -346,8 +359,8 @@ class ContentControllerTest {
                 null, // courseId
                 null, // lecturerId
                 null, // facultyId
-                "",   // filePath
-                ""    // title
+                "", // filePath
+                "" // title
         );
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
