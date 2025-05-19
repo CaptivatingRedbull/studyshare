@@ -88,9 +88,6 @@ public class UserService {
             }
             user.setEmail(userUpdateRequest.email());
         }
-        if (userUpdateRequest.role() != null) {
-            user.setRole(userUpdateRequest.role());
-        }
 
         User updatedUser = userRepository.save(user);
         return UserDTO.fromEntity(updatedUser);
