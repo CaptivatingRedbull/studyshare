@@ -44,7 +44,7 @@ services:
       # The apiClient.ts uses import.meta.env.VITE_API_URL, which is a build-time variable.
       # For local development with Docker Compose, you'd typically pass this at build time (see build.args above)
       # or configure Nginx to proxy requests to the backend.
-      - VITE_API_URL=http://localhost:8080 # This is what the browser on your host will use
+      - VITE_API_URL=http://192.168.67.63:8080 # This is what the browser on your host will use
                                           # Nginx will serve files, browser makes API calls.
                                           # If Nginx needs to proxy, this env var is for the Nginx container itself.
     depends_on:
