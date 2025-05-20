@@ -52,13 +52,17 @@ public class CourseController {
                 .buildAndExpand(createdCourse.id())
                 .toUri();
         return ResponseEntity.created(location).body(createdCourse);
+
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id, @Valid @RequestBody CourseUpdateRequest updateRequest) {
+    public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id,
+            @Valid @RequestBody CourseUpdateRequest updateRequest) {
+
         CourseDTO updatedCourse = courseService.updateCourse(id, updateRequest);
         return ResponseEntity.ok(updatedCourse);
+
     }
 
     @DeleteMapping("/{id}")
@@ -77,7 +81,8 @@ public class CourseController {
 
     @DeleteMapping("/{courseId}/lecturers/{lecturerId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CourseDTO> removeLecturerFromCourse(@PathVariable Long courseId, @PathVariable Long lecturerId) {
+    public ResponseEntity<CourseDTO> removeLecturerFromCourse(@PathVariable Long courseId,
+            @PathVariable Long lecturerId) {
         CourseDTO updatedCourse = courseService.removeLecturerFromCourse(courseId, lecturerId);
         return ResponseEntity.ok(updatedCourse);
     }

@@ -2,18 +2,20 @@ import * as React from "react";
 import navData from "@/data/dashboard/NavMain.json";
 
 import {
-  IconCamera,
-  IconChartBar,
+  IconBinoculars,
+  IconBrightnessDown,
   IconCloudShare,
-  IconDashboard,
-  IconFileAi,
-  IconFileDescription,
-  IconFolder,
+  IconFileAlert,
+  IconFolderOpen,
   IconHelp,
   IconListDetails,
-  IconSearch,
+  IconListTree,
+  IconMail,
+  IconMessageReport,
+  IconMoon,
+  IconReplaceUser,
   IconSettings,
-  IconUsers,
+
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -30,111 +32,43 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/AuthContext";
 
+import { SearchForm } from "./search-form";
+import { useTheme } from "./theme-provider";
+import { Button } from "./ui/button";
 const data = {
-  user: {
-    name: "mmustermann",
-    email: "m@example.com",
-  },
-  navMain: [
-    {
-      title: "Inhalte durchstöbern",
-      url: "#",
-      icon: IconDashboard,
-    },
-    {
-      title: "Gemeldeten Inhalte",
-      url: "#",
-      icon: IconListDetails,
-    },
-    {
-      title: "User Verwalten",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Kurse Struktur Verwalten",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
-    },
-  ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
   navSecondary: [
     {
-      title: "Settings",
-      url: "#",
+      title: "Einstellungen",
+      url: "/exchange/settings",
       icon: IconSettings,
     },
     {
-      title: "Get Help",
-      url: "#",
+      title: "Hilfe",
+      url: "/exchange/help",
       icon: IconHelp,
     },
     {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
+      title: "Kontaktieren sie uns",
+      url: "/exchange/contact",
+      icon: IconMail,
+    },
+    {
+      title: "Datenschutz",
+      url: "/exchange/privacy",
+      icon: IconListDetails,
     },
   ],
 };
 
 const iconMap: Record<string, React.FC<any>> = {
-  IconDashboard,
-  IconListDetails,
-  IconChartBar,
-  IconFolder,
-  IconUsers,
+
+  IconBinoculars,
+  IconFolderOpen,
+  IconFileAlert,
+  IconMessageReport,
+  IconReplaceUser,
+  IconListTree,
+
 };
 
 function NavProvider() {
@@ -151,32 +85,70 @@ function NavProvider() {
     ...item,
     icon: iconMap[item.icon] || undefined,
   }));
+
+}
+
+function UserProvider() {
+  const { user } = useAuth();
+  return user
+    ? {
+        name: user.username,
+        email: user.email,
+      }
+    : {
+        name: "",
+        email: "",
+      };
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { theme, setTheme } = useTheme();
+
+  function handleThemeChange() {
+    if (theme === "dark") {
+      setTheme("light");
+    } else {
+      setTheme("dark");
+    }
+  }
+
+  function themeIconProvider() {
+    if (theme === "dark") {
+      return <IconBrightnessDown />;
+    } else {
+      return <IconMoon />;
+    }
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
-                <IconCloudShare className="!size-5" />
-                <span className="text-base font-semibold">StudyShare</span>
-              </a>
-            </SidebarMenuButton>
+            <div className="flex items-center gap-2">
+              <SidebarMenuButton
+                asChild
+                className="data-[slot=sidebar-menu-button]:!p-1.5"
+              >
+                <a href="/exchange">
+                  <IconCloudShare className="!size-5" />
+                  <span className="text-base font-semibold">StudyShare</span>
+                </a>
+              </SidebarMenuButton>
+              <Button variant="outline" size="icon" onClick={handleThemeChange}>
+                {themeIconProvider()}
+              </Button>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
+        <SearchForm />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={NavProvider()} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={UserProvider()} />
       </SidebarFooter>
     </Sidebar>
   );

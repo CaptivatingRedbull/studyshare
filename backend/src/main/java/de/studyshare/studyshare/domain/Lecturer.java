@@ -64,10 +64,12 @@ public class Lecturer {
 
     public void addCourse(Course course) {
         this.courses.add(course);
+        course.addLecturer(this);
     }
 
     public void removeCourse(Course course) {
         this.courses.remove(course);
+        course.removeLecturer(this);
     }
 
     @Override

@@ -162,6 +162,7 @@ public class CourseService {
             throw new BadRequestException("Lecturer with id " + lecturerId + " is not assigned to course " + courseId);
         }
         course.removeLecturer(lecturer);
+        lecturerRepository.save(lecturer);
         return CourseDTO.fromEntity(courseRepository.save(course));
     }
 }

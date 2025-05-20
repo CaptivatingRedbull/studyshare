@@ -52,3 +52,4 @@ sketch
 
 # Exclude Database volume
 db/
+.DS_Store

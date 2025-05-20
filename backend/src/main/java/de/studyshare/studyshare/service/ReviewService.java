@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import de.studyshare.studyshare.domain.Content;
 import de.studyshare.studyshare.domain.Review;
+import de.studyshare.studyshare.domain.Role;
 import de.studyshare.studyshare.domain.User;
 import de.studyshare.studyshare.dto.entity.ReviewDTO;
 import de.studyshare.studyshare.dto.request.ReviewCreateRequest;
@@ -59,7 +60,8 @@ public class ReviewService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
         User reviewingUser = userRepository.findByUsername(currentUsername)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername + " (authenticated user not found)"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username",
+                        currentUsername + " (authenticated user not found)"));
 
         Content contentToReview = contentRepository.findById(contentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Content", "id", contentId));
@@ -90,7 +92,10 @@ public class ReviewService {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
-        if (!review.getUser().getUsername().equals(currentUsername) /* && !isAdmin(authentication) */) {
+        if (!review.getUser().getUsername().equals(currentUsername)
+                && !(userRepository.findByUsername(authentication.getName())
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername))
+                        .getRole() == Role.ADMIN)) {
             throw new AccessDeniedException("You are not authorized to update this review.");
         }
 
@@ -115,7 +120,10 @@ public class ReviewService {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
-        if (!review.getUser().getUsername().equals(currentUsername) /* && !isAdmin(authentication) && !isContentOwner(review.getContent(), currentUsername) */) {
+        if (!review.getUser().getUsername().equals(currentUsername) &&
+                !(userRepository.findByUsername(authentication.getName())
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername))
+                        .getRole() == Role.ADMIN)) {
             throw new AccessDeniedException("You are not authorized to delete this review.");
         }
 

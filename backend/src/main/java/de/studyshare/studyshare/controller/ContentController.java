@@ -22,7 +22,7 @@ import de.studyshare.studyshare.service.ContentService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/contents")
+@RequestMapping("/api/content")
 public class ContentController {
 
     private final ContentService contentService;
@@ -46,19 +46,24 @@ public class ContentController {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ContentDTO> createContent(@Valid @RequestBody ContentCreateRequest createRequest) {
+
         ContentDTO createdContent = contentService.createContent(createRequest);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(createdContent.id())
                 .toUri();
         return ResponseEntity.created(location).body(createdContent);
+
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @contentSecurityService.isOwner(authentication, #id)")
-    public ResponseEntity<ContentDTO> updateContent(@PathVariable Long id, @Valid @RequestBody ContentUpdateRequest updateRequest) {
+    public ResponseEntity<ContentDTO> updateContent(@PathVariable Long id,
+            @Valid @RequestBody ContentUpdateRequest updateRequest) {
+
         ContentDTO updatedContent = contentService.updateContent(id, updateRequest);
         return ResponseEntity.ok(updatedContent);
+
     }
 
     @DeleteMapping("/{id}")
