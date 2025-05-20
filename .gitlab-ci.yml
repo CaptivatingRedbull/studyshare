@@ -1,4 +1,5 @@
 stages:
+  - test
   - build
   - deploy
 
@@ -12,6 +13,14 @@ variables:
   HTTPS_PROXY: "http://proxy.hof-university.de:3128"
   NO_PROXY: "localhost,127.0.0.1"
 
+test_backend:
+  stage: test
+  image: maven:3.9.9-eclipse-temurin-21
+  script:
+    - cd backend
+    - ./mvnw test
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
 
 build_backend:
   stage: build
@@ -22,7 +31,6 @@ build_backend:
     - docker build -t studyshare-backend:$CI_COMMIT_REF_SLUG .
   rules:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
-
 
 build_frontend:
   stage: build
