@@ -139,7 +139,7 @@ export const toastLoading = ({
     // Using the generic toast for a loading *style*
     <ToastContentInternal title={title} message={message} />,
     {
-      duration: options?.duration || 100000, // Default to a long duration for loading toasts
+      duration: options?.duration || 15000, // Default to a long duration for loading toasts
       ...options,
     }
   );

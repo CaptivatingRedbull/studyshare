@@ -135,8 +135,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Button>
             </div>
           </SidebarMenuItem>
+          <SearchForm/>
         </SidebarMenu>
-        <SearchForm />
+        
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={NavProvider()} />
