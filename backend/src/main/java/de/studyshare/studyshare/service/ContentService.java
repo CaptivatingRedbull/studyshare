@@ -4,11 +4,14 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import de.studyshare.studyshare.domain.Content;
+import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.domain.Course;
 import de.studyshare.studyshare.domain.Faculty;
 import de.studyshare.studyshare.domain.Lecturer;
@@ -65,7 +68,8 @@ public class ContentService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
         User uploadedByUser = userRepository.findByUsername(currentUsername)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername + " (authenticated user not found)"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username",
+                        currentUsername + " (authenticated user not found)"));
 
         Course course = courseRepository.findById(createRequest.courseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", createRequest.courseId()));
@@ -75,7 +79,8 @@ public class ContentService {
         Lecturer lecturer = null;
 
         if (!course.getFaculty().getId().equals(faculty.getId())) {
-            throw new BadRequestException("The specified course (ID: " + course.getId() + ") does not belong to the specified faculty (ID: " + faculty.getId() + ").");
+            throw new BadRequestException("The specified course (ID: " + course.getId()
+                    + ") does not belong to the specified faculty (ID: " + faculty.getId() + ").");
         }
 
         Content content = new Content();
@@ -113,11 +118,15 @@ public class ContentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", updateRequest.lecturerId()));
         content.setLecturer(newLecturer);
 
-        if (content.getCourse() != null && !content.getCourse().getFaculty().getId().equals(content.getFaculty().getId())) {
-            throw new BadRequestException("The content's course (ID: " + content.getCourse().getId() + ") must belong to the content's faculty (ID: " + content.getFaculty().getId() + ").");
+        if (content.getCourse() != null
+                && !content.getCourse().getFaculty().getId().equals(content.getFaculty().getId())) {
+            throw new BadRequestException("The content's course (ID: " + content.getCourse().getId()
+                    + ") must belong to the content's faculty (ID: " + content.getFaculty().getId() + ").");
         }
-        if (content.getLecturer() != null && content.getCourse() != null && !content.getCourse().getLecturers().contains(content.getLecturer())) {
-            throw new BadRequestException("The content's lecturer (ID: " + content.getLecturer().getId() + ") must be associated with the content's course (ID: " + content.getCourse().getId() + ").");
+        if (content.getLecturer() != null && content.getCourse() != null
+                && !content.getCourse().getLecturers().contains(content.getLecturer())) {
+            throw new BadRequestException("The content's lecturer (ID: " + content.getLecturer().getId()
+                    + ") must be associated with the content's course (ID: " + content.getCourse().getId() + ").");
         }
 
         Content updatedContent = contentRepository.save(content);
@@ -161,6 +170,33 @@ public class ContentService {
     @Transactional
     public List<ContentDTO> getContentsByCourseId(Long courseId) {
         return contentRepository.findByCourseId(courseId).stream()
+                .map(ContentDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<ContentDTO> getFilteredAndSortedContents(
+            Long facultyId, Long courseId, Long lecturerId, ContentCategory category, String searchTerm, String sortBy,
+            String sortDirection) {
+
+        Specification<Content> spec = ContentSpecifications.filterBy(facultyId, courseId, lecturerId, category,
+                searchTerm);
+
+        Sort sort = Sort.unsorted();
+        if (sortBy != null && !sortBy.trim().isEmpty()) {
+            Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("desc"))
+                    ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
+            if ("uploadDate".equalsIgnoreCase(sortBy) || "title".equalsIgnoreCase(sortBy)) {
+                sort = Sort.by(direction, sortBy);
+            } else {
+                sort = Sort.by(Sort.Direction.DESC, "uploadDate"); // Default sort
+            }
+        } else {
+            sort = Sort.by(Sort.Direction.DESC, "uploadDate"); // Default sort if no sortBy is provided
+        }
+
+        return contentRepository.findAll(spec, sort).stream()
                 .map(ContentDTO::fromEntity)
                 .collect(Collectors.toList());
     }

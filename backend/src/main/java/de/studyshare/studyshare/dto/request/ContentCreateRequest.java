@@ -18,9 +18,9 @@ public record ContentCreateRequest(
         @NotBlank(message = "File path cannot be blank")
         @Size(max = 255, message = "File path is too long")
         String filePath,
-        @NotNull(message = "Title or description cannot be null")
-        @NotBlank(message = "Title or description cannot be blank")
-        @Size(max = 255, message = "Title or description is too long")
+        @NotNull(message = "Title cannot be null")
+        @NotBlank(message = "Title cannot be blank")
+        @Size(max = 255, message = "Title is too long")
         String title
         ) {
 

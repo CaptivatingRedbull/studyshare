@@ -1,6 +1,16 @@
 package de.studyshare.studyshare.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,7 +26,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import de.studyshare.studyshare.domain.Content;
 import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.domain.Course;
 import de.studyshare.studyshare.domain.Faculty;
@@ -26,6 +38,7 @@ import de.studyshare.studyshare.domain.User;
 import de.studyshare.studyshare.dto.entity.ContentDTO;
 import de.studyshare.studyshare.dto.request.ContentCreateRequest;
 import de.studyshare.studyshare.dto.request.ContentUpdateRequest;
+import de.studyshare.studyshare.repository.ContentRepository;
 import de.studyshare.studyshare.repository.CourseRepository;
 import de.studyshare.studyshare.repository.FacultyRepository;
 import de.studyshare.studyshare.repository.LecturerRepository;
@@ -58,53 +71,86 @@ class ContentControllerTest {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
+    private ContentRepository contentRepository;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
     private JpaUserDetailsService jpaUserDetailsService;
 
     private String baseUrl;
-
     private User testUser;
     private User adminUser;
-    private Faculty faculty;
-    private Course course;
-    private Lecturer lecturer;
-
     private String testUserJwt;
     private String adminUserJwt;
 
+    // Test data entities
+    private Faculty facultyEng;
+    private Faculty facultyCS;
+    private Course courseAlgo;
+    private Course courseWebDev;
+    private Course courseMath;
+    private Lecturer lecturerSmith;
+    private Lecturer lecturerDoe;
+    private Content content1, content2, content3, content4, content5;
+
     @BeforeEach
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/api/content";
+        baseUrl = "http://localhost:" + port + "/api/contents"; // Corrected base URL
 
-        // Setup test data
+        // Setup Users
         testUser = new User("Test", "User", "testuser@example.com", "testuser",
                 passwordEncoder.encode("password"), Role.STUDENT);
         userRepository.save(testUser);
-        String testUserJwt = jwtUtil
-                .generateToken(jpaUserDetailsService.loadUserByUsername(testUser.getUsername()));
-        this.testUserJwt = testUserJwt; // dont know why this is needed but when assigning it directly it is
-                                        // null
+        testUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(testUser.getUsername()));
+
         adminUser = new User("Admin", "User", "admin@example.com", "admin", passwordEncoder.encode("adminpass"),
                 Role.ADMIN);
         userRepository.save(adminUser);
-        String adminUserJwt = jwtUtil
-                .generateToken(jpaUserDetailsService.loadUserByUsername(adminUser.getUsername()));
-        this.adminUserJwt = adminUserJwt;
+        adminUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(adminUser.getUsername()));
 
-        faculty = new Faculty("Engineering");
-        facultyRepository.save(faculty);
+        // Setup Faculties
+        facultyEng = new Faculty("Engineering");
+        facultyRepository.save(facultyEng);
+        facultyCS = new Faculty("Computer Science");
+        facultyRepository.save(facultyCS);
 
-        course = new Course("Algorithms", faculty);
-        courseRepository.save(course);
+        // Setup Lecturers
+        lecturerSmith = new Lecturer("Dr. Smith", "smith@uni.edu");
+        lecturerRepository.save(lecturerSmith);
+        lecturerDoe = new Lecturer("Prof. Doe", "doe@uni.edu");
+        lecturerRepository.save(lecturerDoe);
 
-        lecturer = new Lecturer("Dr. Smith", "smith@uni.edu");
-        lecturerRepository.save(lecturer);
-        lecturer.addCourse(course);
-        course.addLecturer(lecturer);
-        courseRepository.save(course);
-        lecturerRepository.save(lecturer);
+        // Setup Courses
+        courseAlgo = new Course("Algorithms", facultyCS);
+        courseRepository.save(courseAlgo); // Save before adding lecturers
+        courseWebDev = new Course("Web Development", facultyCS);
+        courseRepository.save(courseWebDev);
+        courseMath = new Course("Calculus", facultyEng);
+        courseRepository.save(courseMath);
+
+        // Associate lecturers with courses
+        courseAlgo.addLecturer(lecturerDoe);
+        courseWebDev.addLecturer(lecturerSmith);
+        courseMath.addLecturer(lecturerSmith);
+        courseRepository.saveAll(Arrays.asList(courseAlgo, courseWebDev, courseMath));
+        lecturerRepository.saveAll(Arrays.asList(lecturerDoe, lecturerSmith)); // Save lecturers again after course
+                                                                               // association
+
+        // Setup Content items with diverse data
+        content1 = new Content("Java Basics", " to Java programming.", ContentCategory.PDF, facultyCS, courseAlgo,
+                lecturerDoe, testUser, LocalDate.now().minusDays(5), 0, 0);
+        content2 = new Content("HTML & CSS Guide", "Guide for web frontend.", ContentCategory.PDF, facultyCS,
+                courseWebDev, lecturerSmith, adminUser, LocalDate.now().minusDays(2), 1, 2);
+        content3 = new Content("Calculus Cheat Sheet", "Important formulas for calculus.", ContentCategory.IMAGE,
+                facultyEng, courseMath, lecturerSmith, testUser, LocalDate.now(), 1, 100);
+        content4 = new Content("Advanced Algorithms", "Deep dive into complex algorithms.", ContentCategory.PDF,
+                facultyCS, courseAlgo, lecturerDoe, adminUser, LocalDate.now().minusDays(10), 10, 0);
+        content5 = new Content("Web App Security", "Security aspects of web applications.", ContentCategory.ZIP,
+                facultyCS, courseWebDev, lecturerSmith, testUser, LocalDate.now().minusDays(1), 0, 0);
+
+        contentRepository.saveAll(Arrays.asList(content1, content2, content3, content4, content5));
 
     }
 
@@ -121,9 +167,9 @@ class ContentControllerTest {
     void createAndGetContentById() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF, // contentCategory
-                course.getId(), // courseId
-                lecturer.getId(), // lecturerId
-                faculty.getId(), // facultyId
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file.pdf", // filePath
                 "Lecture 1" // title
         );
@@ -155,9 +201,9 @@ class ContentControllerTest {
     void updateContent_asAdmin() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                course.getId(),
-                lecturer.getId(),
-                faculty.getId(),
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file2.pdf",
                 "Lecture 2");
 
@@ -170,9 +216,9 @@ class ContentControllerTest {
 
         ContentUpdateRequest updateReq = new ContentUpdateRequest(
                 ContentCategory.PDF,
-                course.getId(),
-                lecturer.getId(),
-                faculty.getId(),
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file2_updated.pdf",
                 "Lecture 2 Updated");
         HttpEntity<ContentUpdateRequest> updateReqAuth = new HttpEntity<>(updateReq, jwtHeaders(adminUserJwt));
@@ -191,9 +237,9 @@ class ContentControllerTest {
     void deleteContent_asAdmin() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                course.getId(),
-                lecturer.getId(),
-                faculty.getId(),
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file3.pdf",
                 "Lecture 3");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
@@ -225,9 +271,9 @@ class ContentControllerTest {
     void reportContent() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                course.getId(),
-                lecturer.getId(),
-                faculty.getId(),
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file4.pdf",
                 "Lecture 4");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
@@ -254,9 +300,9 @@ class ContentControllerTest {
     void markContentAsOutdated() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                course.getId(),
-                lecturer.getId(),
-                faculty.getId(),
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file5.pdf",
                 "Lecture 5");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
@@ -283,9 +329,9 @@ class ContentControllerTest {
     void updateContent_notOwnerForbidden() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                course.getId(),
-                lecturer.getId(),
-                faculty.getId(),
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file6.pdf",
                 "Lecture 6");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
@@ -301,9 +347,9 @@ class ContentControllerTest {
 
         ContentUpdateRequest updateReq = new ContentUpdateRequest(
                 ContentCategory.PDF,
-                course.getId(),
-                lecturer.getId(),
-                faculty.getId(),
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file6_updated.pdf",
                 "Lecture 6 Updated");
         HttpEntity<ContentUpdateRequest> entity = new HttpEntity<>(updateReq, jwtHeaders(otherUserJwt));
@@ -322,9 +368,9 @@ class ContentControllerTest {
     void deleteContent_notOwnerForbidden() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                course.getId(),
-                lecturer.getId(),
-                faculty.getId(),
+                courseAlgo.getId(), // courseId
+                lecturerDoe.getId(), // lecturerId
+                facultyCS.getId(), // facultyId
                 "/path/to/file7.pdf",
                 "Lecture 7");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
@@ -369,4 +415,185 @@ class ContentControllerTest {
 
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    @DisplayName("[Browse] No filters - should return all sorted by date desc (default)")
+    @SuppressWarnings("null")
+    void browseContents_noFilters_shouldReturnAllSortedByDateDesc() {
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(baseUrl + "/browse", HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(5);
+        List<ContentDTO> sortedContent = Arrays.stream(contents)
+                .sorted(Comparator.comparing(ContentDTO::uploadDate).reversed())
+                .collect(Collectors.toList());
+        assertThat(Arrays.asList(contents)).containsExactlyElementsOf(sortedContent);
+    }
+
+    @Test
+    @DisplayName("[Browse] Filter by facultyId")
+    @SuppressWarnings("null")
+    void browseContents_filterByFacultyId() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("facultyId", facultyCS.getId());
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(4);
+        assertTrue(Arrays.stream(contents).allMatch(c -> c.faculty().id().equals(facultyCS.getId())));
+    }
+
+    @Test
+    @DisplayName("[Browse] Filter by courseId")
+    @SuppressWarnings("null")
+    void browseContents_filterByCourseId() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("courseId", courseAlgo.getId());
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(2);
+        assertTrue(Arrays.stream(contents).allMatch(c -> c.course().id().equals(courseAlgo.getId())));
+    }
+
+    @Test
+    @DisplayName("[Browse] Filter by lecturerId")
+    @SuppressWarnings("null")
+    void browseContents_filterByLecturerId() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("lecturerId", lecturerSmith.getId());
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(3);
+        assertTrue(Arrays.stream(contents).allMatch(c -> Objects.equals(c.lecturer().id(), lecturerSmith.getId())));
+    }
+
+    @Test
+    @DisplayName("[Browse] Filter by category")
+    @SuppressWarnings("null")
+    void browseContents_filterByCategory() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("category", ContentCategory.PDF.toString());
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(3);
+        assertTrue(Arrays.stream(contents).allMatch(c -> c.contentCategory() == ContentCategory.PDF));
+    }
+
+    @Test
+    @DisplayName("[Browse] Filter by searchTerm in title")
+    @SuppressWarnings("null")
+    void browseContents_filterBySearchTerm_title() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("searchTerm", "java");
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(
+                builder.toUriString(),
+                HttpMethod.GET,
+                entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(1);
+        assertThat(contents[0].title()).isEqualTo("Java Basics");
+    }
+
+    @Test
+    @DisplayName("[Browse] Filter by multiple criteria (facultyCS and PDF)")
+    @SuppressWarnings("null")
+    void browseContents_filterByMultipleCriteria() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("facultyId", facultyCS.getId())
+                .queryParam("category", ContentCategory.PDF.toString());
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(3);
+        assertTrue(Arrays.stream(contents).allMatch(
+                c -> c.faculty().id().equals(facultyCS.getId()) && c.contentCategory() == ContentCategory.PDF));
+    }
+
+    @Test
+    @DisplayName("[Browse] Sort by uploadDate ASC")
+    @SuppressWarnings("null")
+    void browseContents_sortByUploadDateAsc() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("sortBy", "uploadDate")
+                .queryParam("sortDirection", "asc");
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(5);
+        assertThat(contents[0].uploadDate()).isEqualTo(content4.getUploadDate());
+        assertThat(contents[4].uploadDate()).isEqualTo(content3.getUploadDate());
+    }
+
+    @Test
+    @DisplayName("[Browse] Sort by title ASC")
+    @SuppressWarnings("null")
+    void browseContents_sortByTitleAsc() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("sortBy", "title")
+                .queryParam("sortDirection", "asc");
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(5);
+        assertThat(contents[0].title()).isEqualTo("Advanced Algorithms");
+        assertThat(contents[4].title()).isEqualTo("Web App Security");
+    }
+
+    @Test
+    @DisplayName("[Browse] No results for filter combination")
+    @SuppressWarnings("null")
+    void browseContents_noResults() {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
+                .queryParam("facultyId", facultyEng.getId())
+                .queryParam("category", ContentCategory.ZIP.toString());
+        HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
+        ResponseEntity<ContentDTO[]> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity,
+                ContentDTO[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ContentDTO[] contents = response.getBody();
+        assertThat(contents).isNotNull();
+        assertThat(contents.length).isEqualTo(0);
+    }
+
 }

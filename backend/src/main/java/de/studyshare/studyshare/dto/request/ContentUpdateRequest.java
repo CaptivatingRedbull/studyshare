@@ -16,8 +16,8 @@ public record ContentUpdateRequest(
         @NotNull(message = "File path cannot be null")
         @Size(max = 255, message = "File path is too long")
         String filePath,
-        @NotNull(message = "Title or description cannot be null")
-        @Size(max = 255, message = "Title or description is too long")
+        @NotNull(message = "Title cannot be null")
+        @Size(max = 255, message = "Title is too long")
         String title
         ) {
 

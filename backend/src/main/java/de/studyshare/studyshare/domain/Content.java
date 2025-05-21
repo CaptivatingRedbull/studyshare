@@ -49,6 +49,23 @@ public class Content {
     public Content() {
     }
 
+    
+
+    public Content(String title, String filePath, ContentCategory contentCategory, Faculty faculty, Course course, Lecturer lecturer, User uploadedBy, LocalDate uploadDate, int reportedCount, int outdatedCount) {
+        this.uploadedBy = uploadedBy;
+        this.reportedCount = reportedCount;
+        this.outdatedCount = outdatedCount;
+        this.uploadDate = uploadDate;
+        this.contentCategory = contentCategory;
+        this.lecturer = lecturer;
+        this.course = course;
+        this.faculty = faculty;
+        this.filePath = filePath;
+        this.title = title;
+    }
+
+
+
     public Long getId() {
         return id;
     }

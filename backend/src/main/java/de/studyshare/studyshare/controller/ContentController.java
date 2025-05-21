@@ -12,9 +12,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.dto.entity.ContentDTO;
 import de.studyshare.studyshare.dto.request.ContentCreateRequest;
 import de.studyshare.studyshare.dto.request.ContentUpdateRequest;
@@ -22,7 +24,7 @@ import de.studyshare.studyshare.service.ContentService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/content")
+@RequestMapping("/api/contents")
 public class ContentController {
 
     private final ContentService contentService;
@@ -85,5 +87,22 @@ public class ContentController {
     public ResponseEntity<ContentDTO> markContentAsOutdated(@PathVariable Long id) {
         ContentDTO updatedContent = contentService.incrementOutdatedCount(id);
         return ResponseEntity.ok(updatedContent);
+    }
+
+    @GetMapping("/browse")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ContentDTO>> browseContents(
+            @RequestParam(required = false) Long facultyId,
+            @RequestParam(required = false) Long courseId,
+            @RequestParam(required = false) Long lecturerId,
+            @RequestParam(required = false) ContentCategory category,
+            @RequestParam(required = false) String searchTerm,
+            @RequestParam(required = false, defaultValue = "uploadDate") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortDirection) {
+        
+        List<ContentDTO> contents = contentService.getFilteredAndSortedContents(
+            facultyId, courseId, lecturerId, category, searchTerm, sortBy, sortDirection
+        );
+        return ResponseEntity.ok(contents);
     }
 }
