@@ -10,34 +10,36 @@ export function LandingPage() {
     const [isRegisterOpen, setIsRegisterOpen] = React.useState(false);
 
     return (
-        <div className="text-center space-y-4">
-            <div className="flex flex-row space-x-4">
-                <IconCloudShare className="!size-10"/>
-                <h1 className="text-4xl">Willkommen bei StudyShare!</h1>
-                
-            </div>
+        <div className="flex flex-col items-center justify-center h-screen w-full">
+            <div className="text-center space-y-4 max-w">
+                <div className="flex flex-row space-x-4">
+                    <IconCloudShare className="!size-10" />
+                    <h1 className="text-4xl">Willkommen bei StudyShare!</h1>
 
-            <div className="space-x-4">
-                <Button onClick={() => setIsLoginOpen(true)} className="btn">Anmelden</Button>
-                <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Anmelden</DialogTitle>
-                        </DialogHeader>
-                        <LoginForm />
-                    </DialogContent>
-                </Dialog>
+                </div>
+
+                <div className="flex items-center justify-center space-x-4">
+                    <Button onClick={() => setIsLoginOpen(true)} className="btn">Anmelden</Button>
+                    <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Anmelden</DialogTitle>
+                            </DialogHeader>
+                            <LoginForm />
+                        </DialogContent>
+                    </Dialog>
 
 
-                <Button onClick={() => setIsRegisterOpen(true)} className="btn-outline">Registrieren</Button>
-                <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Registrieren</DialogTitle>
-                        </DialogHeader>
-                        <RegisterForm />
-                    </DialogContent>
-                </Dialog>
+                    <Button onClick={() => setIsRegisterOpen(true)} className="btn-outline">Registrieren</Button>
+                    <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Registrieren</DialogTitle>
+                            </DialogHeader>
+                            <RegisterForm />
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
         </div>
     );
