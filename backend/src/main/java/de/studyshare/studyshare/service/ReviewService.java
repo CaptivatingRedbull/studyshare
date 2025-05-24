@@ -82,6 +82,7 @@ public class ReviewService {
         review.setComment(createRequest.comment());
 
         Review savedReview = reviewRepository.save(review);
+        updateContentAverageRating(contentId);
         return ReviewDTO.fromEntity(savedReview);
     }
 
@@ -110,6 +111,7 @@ public class ReviewService {
         }
 
         Review updatedReview = reviewRepository.save(review);
+        updateContentAverageRating(review.getContent().getId());
         return ReviewDTO.fromEntity(updatedReview);
     }
 
@@ -126,7 +128,26 @@ public class ReviewService {
                         .getRole() == Role.ADMIN)) {
             throw new AccessDeniedException("You are not authorized to delete this review.");
         }
-
+        Long contentId = review.getContent().getId();
         reviewRepository.delete(review);
+        updateContentAverageRating(contentId);
+    }
+
+    private void updateContentAverageRating(Long contentId) {
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Content", "id", contentId + " (while updating average rating)"));
+        
+        List<Review> reviews = reviewRepository.findByContentId(contentId);
+        if (reviews.isEmpty()) {
+            content.setAverageRating(0.0);
+        } else {
+            double average = reviews.stream()
+                                  .mapToInt(Review::getStars)
+                                  .average()
+                                  .orElse(0.0);
+            average = Math.round(average * 10.0) / 10.0;
+            content.setAverageRating(average);
+        }
+        contentRepository.save(content);
     }
 }

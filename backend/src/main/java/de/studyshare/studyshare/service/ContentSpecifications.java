@@ -34,7 +34,7 @@ public class ContentSpecifications {
                 predicates.add(criteriaBuilder.equal(courseJoin.get("id"), courseId));
             }
             if (lecturerId != null) {
-                Join<Content, Lecturer> lecturerJoin = root.join("lecturer"); // Assuming 'lecturer' is the field name in Content entity
+                Join<Content, Lecturer> lecturerJoin = root.join("lecturer");
                 predicates.add(criteriaBuilder.equal(lecturerJoin.get("id"), lecturerId));
             }
             if (category != null) {

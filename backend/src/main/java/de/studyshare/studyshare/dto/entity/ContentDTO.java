@@ -16,7 +16,8 @@ public record ContentDTO(
         CourseDTO course,
         FacultyDTO faculty,
         String filePath,
-        String title
+        String title,
+        Double averageRating
         ) {
 
     public static ContentDTO fromEntity(Content content) {
@@ -34,7 +35,8 @@ public record ContentDTO(
                 content.getCourse() != null ? CourseDTO.fromEntity(content.getCourse()) : null,
                 content.getFaculty() != null ? FacultyDTO.fromEntity(content.getFaculty()) : null,
                 content.getFilePath(),
-                content.getTitle()
+                content.getTitle(),
+                content.getAverageRating()
         );
     }
 }

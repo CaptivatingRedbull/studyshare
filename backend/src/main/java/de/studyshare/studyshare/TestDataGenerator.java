@@ -6,6 +6,7 @@ import java.util.Arrays;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import de.studyshare.studyshare.domain.Content;
@@ -22,6 +23,7 @@ import de.studyshare.studyshare.repository.LecturerRepository;
 import de.studyshare.studyshare.repository.UserRepository;
 
 @Configuration
+@Profile("dev")
 public class TestDataGenerator {
 
     @Bean
@@ -54,11 +56,11 @@ public class TestDataGenerator {
                     "mariadb", passwordEncoder.encode("adminpass"), Role.ADMIN);
             userRepository.save(user2);
 
-            testUser = new User("Test", "User", "testuser@example.com", "testuser",
+            testUser = new User("Test", "User", "testuserGenData@example.com", "testuserGenData",
                     passwordEncoder.encode("password"), Role.STUDENT);
             userRepository.save(testUser);
 
-            adminUser = new User("Admin", "User", "admin@example.com", "admin", passwordEncoder.encode("adminpass"),
+            adminUser = new User("Admin", "User", "adminGenData@example.com", "adminGenData", passwordEncoder.encode("adminpass"),
                     Role.ADMIN);
             userRepository.save(adminUser);
 

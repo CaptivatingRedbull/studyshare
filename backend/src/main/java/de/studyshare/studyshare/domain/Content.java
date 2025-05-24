@@ -3,6 +3,7 @@ package de.studyshare.studyshare.domain;
 import java.time.LocalDate;
 import java.util.Objects;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -46,12 +47,14 @@ public class Content {
     private String filePath;
     private String title;
 
+    @Column(name = "average_rating") 
+    private Double averageRating = 0.0; 
+
     public Content() {
     }
 
-    
-
-    public Content(String title, String filePath, ContentCategory contentCategory, Faculty faculty, Course course, Lecturer lecturer, User uploadedBy, LocalDate uploadDate, int reportedCount, int outdatedCount) {
+    public Content(String title, String filePath, ContentCategory contentCategory, Faculty faculty, Course course,
+            Lecturer lecturer, User uploadedBy, LocalDate uploadDate, int reportedCount, int outdatedCount) {
         this.uploadedBy = uploadedBy;
         this.reportedCount = reportedCount;
         this.outdatedCount = outdatedCount;
@@ -62,9 +65,8 @@ public class Content {
         this.faculty = faculty;
         this.filePath = filePath;
         this.title = title;
+        this.averageRating = 0.0; 
     }
-
-
 
     public Long getId() {
         return id;
@@ -152,6 +154,14 @@ public class Content {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Double getAverageRating() {
+        return averageRating;
+    }
+
+    public void setAverageRating(Double averageRating) {
+        this.averageRating = averageRating;
     }
 
     @Override
