@@ -3,6 +3,8 @@ package de.studyshare.studyshare.controller;
 import java.net.URI;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -91,18 +93,19 @@ public class ContentController {
 
     @GetMapping("/browse")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ContentDTO>> browseContents(
+    public ResponseEntity<Page<ContentDTO>> browseContents(
             @RequestParam(required = false) Long facultyId,
             @RequestParam(required = false) Long courseId,
             @RequestParam(required = false) Long lecturerId,
             @RequestParam(required = false) ContentCategory category,
             @RequestParam(required = false) String searchTerm,
             @RequestParam(required = false, defaultValue = "uploadDate") String sortBy,
-            @RequestParam(required = false, defaultValue = "desc") String sortDirection) {
-        
-        List<ContentDTO> contents = contentService.getFilteredAndSortedContents(
-            facultyId, courseId, lecturerId, category, searchTerm, sortBy, sortDirection
-        );
-        return ResponseEntity.ok(contents);
+            @RequestParam(required = false, defaultValue = "desc") String sortDirection,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "20") int size) {
+
+        Page<ContentDTO> contentsPage = contentService.getFilteredAndSortedContents(
+                facultyId, courseId, lecturerId, category, searchTerm, sortBy, sortDirection, PageRequest.of(page, size));
+        return ResponseEntity.ok(contentsPage);
     }
 }

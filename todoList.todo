@@ -1,0 +1,33 @@
+# Frontend
+
+TODO input bereinigen -> code injection verhindern -> maybe auch backend
+TODO suche auf browse seite einbauen
+TODO browse seite scaling fixen bei schmaler darstellung
+TODO Content API ändern -> siehe backend
+TODO Maybe Einstellungen in user popup (untern links ecke)
+
+## noch nicht erstellte seiten
+### allgemeine seiten
+TODO Settings
+TODO Hilfe
+TODO Contact
+TODO Impressum ? 
+TODO Datenschutz
+TODO Meine inhalte
+
+### Admin seiten
+TODO Gemeldete Inhalte
+TODO Gemeldete Bewertungen
+TODO User Verwalten
+TODO Kursstruktur verwalten
+
+# Backend
+TODO downloads Implementieren 
+TODO serverside token invalidation
+TODO Content rating feld hinzufügen
+    TODO frontend API anpassen
+    TODO Automatische berechnung auf basis von bewerungen -> muss jedes mal laufen, wenn eine Neue bewertung erstellt wird?
+TODO Page implementation fixen -> warn von springboot: For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
+TODO Browse feature basically auch für User 
+TODO Browse feature basically auch für Bewertungen
+TODO Auf mariaDB umsteigen

@@ -4,6 +4,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
@@ -175,29 +178,31 @@ public class ContentService {
     }
 
     @Transactional
-    public List<ContentDTO> getFilteredAndSortedContents(
-            Long facultyId, Long courseId, Long lecturerId, ContentCategory category, String searchTerm, String sortBy,
-            String sortDirection) {
+    public Page<ContentDTO> getFilteredAndSortedContents(
+            Long facultyId,
+            Long courseId,
+            Long lecturerId,
+            ContentCategory category,
+            String searchTerm,
+            String sortBy,
+            String sortDirection,
+            Pageable pageable) {
 
-        Specification<Content> spec = ContentSpecifications.filterBy(facultyId, courseId, lecturerId, category,
-                searchTerm);
+        Specification<Content> spec = ContentSpecifications.filterBy(
+                facultyId, courseId, lecturerId, category, searchTerm);
 
-        Sort sort = Sort.unsorted();
-        if (sortBy != null && !sortBy.trim().isEmpty()) {
-            Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("desc"))
-                    ? Sort.Direction.DESC
-                    : Sort.Direction.ASC;
-            if ("uploadDate".equalsIgnoreCase(sortBy) || "title".equalsIgnoreCase(sortBy)) {
-                sort = Sort.by(direction, sortBy);
-            } else {
-                sort = Sort.by(Sort.Direction.DESC, "uploadDate"); // Default sort
-            }
-        } else {
-            sort = Sort.by(Sort.Direction.DESC, "uploadDate"); // Default sort if no sortBy is provided
-        }
+        Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("desc"))
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
 
-        return contentRepository.findAll(spec, sort).stream()
-                .map(ContentDTO::fromEntity)
-                .collect(Collectors.toList());
+        Sort sort = Sort.by(direction, sortBy != null ? sortBy : "uploadDate");
+
+        PageRequest pageRequest = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                sort);
+
+        Page<Content> contentPage = contentRepository.findAll(spec, pageRequest);
+        return contentPage.map(ContentDTO::fromEntity);
     }
 }
