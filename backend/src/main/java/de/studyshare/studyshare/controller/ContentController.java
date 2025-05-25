@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -31,7 +32,6 @@ import de.studyshare.studyshare.dto.request.ContentCreateRequest;
 import de.studyshare.studyshare.dto.request.ContentUpdateRequest;
 import de.studyshare.studyshare.service.ContentService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 
 @RestController
 @RequestMapping("/api/contents")
@@ -55,18 +55,19 @@ public class ContentController {
         return ResponseEntity.ok(contentService.getContentById(id));
     }
 
-    @PostMapping
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}) // Explicitly state it consumes multipart
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ContentDTO> createContent(@Valid @RequestBody ContentCreateRequest createRequest,
-            @NotNull @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ContentDTO> createContent(
+            @Valid @RequestPart("contentData") ContentCreateRequest createRequest,
+            @RequestPart("file") MultipartFile file) { // Changed @RequestParam to @RequestPart for the file
 
+        // Your existing call to contentService, which should now be `storeFile`
         ContentDTO createdContent = contentService.createContent(createRequest, file);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(createdContent.id())
                 .toUri();
         return ResponseEntity.created(location).body(createdContent);
-
     }
 
     @PutMapping("/{id}")

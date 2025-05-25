@@ -13,9 +13,6 @@ public record ContentUpdateRequest(
         Long lecturerId,
         @NotNull(message = "Faculty ID cannot be null")
         Long facultyId,
-        @NotNull(message = "File path cannot be null")
-        @Size(max = 255, message = "File path is too long")
-        String filePath,
         @NotNull(message = "Title cannot be null")
         @Size(max = 255, message = "Title is too long")
         String title

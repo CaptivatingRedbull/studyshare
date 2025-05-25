@@ -28,7 +28,8 @@ import {
     FileText,
     Users,
     BookOpen,
-    Building
+    Building,
+    Star
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { IconFileTypeJpg, IconFileTypePdf, IconFileTypeZip } from '@tabler/icons-react';
@@ -39,12 +40,16 @@ import { PaginationContent, PaginationItem, PaginationNext, PaginationPrevious }
 import { getAllFaculties } from '@/api/facultyApi';
 import { getAllCourses } from '@/api/courseApi';
 import { getAllLecturers } from '@/api/lecturerApi';
+import { toastError, toastSuccess } from '@/components/ui/sonner';
+import { apiClient } from '@/api/apiClient';
 
 const contentCategories: ContentCategory[] = ["PDF", "IMAGE", "ZIP"];
 
 const sortOptions = [
-    { value: 'uploadDate', label: 'Datum (neu zuerst)' },
-    { value: 'title', label: 'Titel (A-Z)' }
+    { value: 'uploadDate', label: 'Hochladedatum' },
+    { value: 'title', label: 'Titel (A-Z)' },
+    { value: 'rating', label: 'Bewertung' }
+
 ];
 
 // --- Helper function to get category icon ---
@@ -68,7 +73,7 @@ export function BrowsePage() {
     const [searchTerm, setSearchTerm] = useState<string>('');
 
     // State for sorting
-    const [sortBy, setSortBy] = useState<"uploadDate" | "title">("uploadDate");
+    const [sortBy, setSortBy] = useState<"uploadDate" | "title" | "rating">("uploadDate");
     const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
 
     // State for pagination
@@ -89,7 +94,7 @@ export function BrowsePage() {
     useEffect(() => {
         getAllFaculties().then(data => setFaculties(data));
         getAllCourses().then(data => setCourses(data));
-        getAllLecturers().then(data => setLecturers(data));    
+        getAllLecturers().then(data => setLecturers(data));
 
         loadContents();
     }, []);
@@ -155,6 +160,9 @@ export function BrowsePage() {
         if (option.value === 'title') {
             setSortBy('title');
             setSortDirection('asc');
+        } else if (option.value === 'rating') {
+            setSortBy('rating');
+            setSortDirection('desc');
         } else {
             setSortBy('uploadDate');
             setSortDirection('desc');
@@ -164,6 +172,36 @@ export function BrowsePage() {
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
+    };
+
+    const handleDownload = async (filePath: string, contentTitle?: string | null) => {
+        try {
+            const response = await apiClient.get(`/api/contents/download/${filePath}`, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            let downloadFilename = filePath;
+            if (contentTitle) {
+                const extensionMatch = filePath.match(/\.([^.]+)$/);
+                const extension = extensionMatch ? extensionMatch[0] : ''; // Includes the dot e.g. ".txt"
+                downloadFilename = `${contentTitle.replace(/[^\w\s.-]/gi, '_')}${extension}`; // Sanitize title and add extension
+            } else {
+                // Fallback if title is not available, use the filePath (which has the extension)
+                downloadFilename = filePath.substring(filePath.lastIndexOf('/') + 1); // Extract filename from path if it's a path
+            }
+
+            link.setAttribute('download', downloadFilename);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            toastSuccess({ title: "Download gestartet", message: downloadFilename });
+        } catch (error) {
+            console.error('Download failed:', error);
+            toastError({ title: "Download fehlgeschlagen", message: "Datei konnte nicht heruntergeladen werden." });
+        }
     };
 
     return (
@@ -245,7 +283,7 @@ export function BrowsePage() {
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline">
                                 <ArrowUpDown className="mr-2 h-4 w-4" />
-                                Sortieren nach: {sortBy === 'uploadDate' ? 'Datum' : 'Titel'}
+                                Sortieren nach: {sortOptions.find(opt => opt.value === sortBy)?.label || 'Datum'}
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -282,6 +320,14 @@ export function BrowsePage() {
                                         <span className="mx-1.5">·</span>
                                         <CalendarDays className="mr-1.5 h-4 w-4" />
                                         <span>{new Date(item.uploadDate).toLocaleDateString()}</span>
+                                        {item.averageRating !== undefined && item.averageRating > 0 && ( // Check if rating exists
+                                            <>
+                                                <span className="mx-1.5">·</span>
+                                                <Star className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                {/* You might need to import Star icon from lucide-react */}
+                                                <span>{item.averageRating.toFixed(1)}</span>
+                                            </>
+                                        )}
                                     </div>
                                 </CardHeader>
                                 <CardContent className="flex-grow">
@@ -293,7 +339,7 @@ export function BrowsePage() {
                                             <UserCircle className="mr-1.5 h-4 w-4" />
                                             <span>{item.uploadedBy?.firstName} {item.uploadedBy?.lastName}</span>
                                         </div>
-                                        
+
                                     </div>
                                     <div className="w-full space-y-1 text-xs text-muted-foreground">
                                         <div className="flex items-center">
@@ -310,7 +356,16 @@ export function BrowsePage() {
                                             </div>
                                         )}
                                     </div>
-                                    <Button variant="outline" size="sm" className="w-full mt-2">
+                                    <Button variant="outline" size="sm" className="w-full mt-2"
+                                        onClick={() => {
+                                            console.log("Attempting to download:", item.title, "with filePath:", item.filePath); // Log the item and filePath
+                                            if (item.filePath && typeof item.filePath === 'string' && item.filePath !== "null" && item.filePath !== "undefined") {
+                                                handleDownload(item.filePath, item.title);
+                                            } else {
+                                                toastError({ title: "Download Fehler", message: "Dateipfad ist ungültig oder fehlt." });
+                                                console.error("Invalid or missing filePath for download:", item.filePath, "for item:", item);
+                                            }
+                                        }}>
                                         <Download className="mr-2 h-4 w-4" />
                                         Herunterladen
                                     </Button>
@@ -359,7 +414,8 @@ export function BrowsePage() {
                     <p className="text-xl font-semibold text-muted-foreground">Keine Inhalte gefunden.</p>
                     <p className="text-sm text-muted-foreground">Versuche andere Filterkriterien.</p>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

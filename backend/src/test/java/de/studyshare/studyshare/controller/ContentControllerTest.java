@@ -187,7 +187,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file.pdf", 
                 "Lecture 1" 
         );
 
@@ -221,7 +220,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file2.pdf",
                 "Lecture 2");
 
         HttpEntity<ContentCreateRequest> createReqAuth = new HttpEntity<>(req, jwtHeaders(adminUserJwt));
@@ -236,7 +234,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file2_updated.pdf",
                 "Lecture 2 Updated");
         HttpEntity<ContentUpdateRequest> updateReqAuth = new HttpEntity<>(updateReq, jwtHeaders(adminUserJwt));
 
@@ -257,7 +254,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file3.pdf",
                 "Lecture 3");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
@@ -291,7 +287,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file4.pdf",
                 "Lecture 4");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
@@ -320,7 +315,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file5.pdf",
                 "Lecture 5");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
@@ -349,7 +343,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file6.pdf",
                 "Lecture 6");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
@@ -367,7 +360,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file6_updated.pdf",
                 "Lecture 6 Updated");
         HttpEntity<ContentUpdateRequest> entity = new HttpEntity<>(updateReq, jwtHeaders(otherUserJwt));
 
@@ -388,7 +380,6 @@ class ContentControllerTest {
                 courseAlgo.getId(), 
                 lecturerDoe.getId(), 
                 facultyCS.getId(), 
-                "/path/to/file7.pdf",
                 "Lecture 7");
         HttpHeaders userHeader = jwtHeaders(testUserJwt);
         HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
@@ -421,7 +412,6 @@ class ContentControllerTest {
                 null, 
                 null, 
                 null, 
-                "", 
                 "" 
         );
         HttpHeaders userHeader = jwtHeaders(testUserJwt);

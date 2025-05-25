@@ -113,6 +113,7 @@ export interface Content {
   faculty: Faculty;
   filePath: string;
   title: string | null;
+  averageRating?: number;
 }
 
 export interface ContentCreateRequest {
@@ -120,7 +121,6 @@ export interface ContentCreateRequest {
   courseId: number;
   lecturerId?: number | null;
   facultyId: number;
-  filePath: string;
   title?: string | null;
 }
 
@@ -129,7 +129,6 @@ export interface ContentUpdateRequest {
   courseId?: number;
   lecturerId?: number | null;
   facultyId?: number;
-  filePath?: string;
   title?: string | null;
 }
 

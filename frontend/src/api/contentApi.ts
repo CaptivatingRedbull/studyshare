@@ -79,7 +79,7 @@ export const browseContents = async (
     lecturerId?: number,
     contentCategory?: ContentCategory,
     searchTerm?: String,
-    sortBy?: "uploadDate" | "title",
+    sortBy?: "uploadDate" | "title" | "rating",
     sortDirection?: "desc" | "asc",
     page?: number,
     size?: number

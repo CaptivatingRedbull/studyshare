@@ -136,9 +136,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Button>
             </div>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SearchForm />
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>

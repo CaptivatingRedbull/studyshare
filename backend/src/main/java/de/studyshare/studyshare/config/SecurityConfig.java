@@ -35,23 +35,25 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsSource))
             .csrf(csrf -> csrf.disable())
+            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // Allow H2 console in frames
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
-                .anyRequest().authenticated()
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("/h2-console/**").permitAll()
+            .anyRequest().authenticated()
             )
             .sessionManagement(sessionManagement
-                    -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
             .exceptionHandling(exceptionHandling
-                    -> exceptionHandling.authenticationEntryPoint((request, response, authException) -> {
-                String expired = (String) request.getAttribute("expired");
-                if (expired != null) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT Token has expired: " + expired);
-                } else {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Access is denied");
-                }
+                -> exceptionHandling.authenticationEntryPoint((request, response, authException) -> {
+            String expired = (String) request.getAttribute("expired");
+            if (expired != null) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT Token has expired: " + expired);
+            } else {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Access is denied");
+            }
             })
             );
         return http.build();

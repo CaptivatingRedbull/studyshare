@@ -141,8 +141,9 @@ public class ContentService {
         content.setCourse(course);
         content.setFaculty(faculty);
         content.setLecturer(lecturer);
-        content.setFilePath(createRequest.filePath());
         content.setTitle(createRequest.title());
+        content.setFilePath(uniqueFilename);
+        
 
         Content savedContent = contentRepository.save(content);
         return ContentDTO.fromEntity(savedContent);
@@ -154,7 +155,6 @@ public class ContentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Content", "id", id));
 
         content.setContentCategory(updateRequest.contentCategory());
-        content.setFilePath(updateRequest.filePath());
 
         content.setTitle(updateRequest.title());
 
