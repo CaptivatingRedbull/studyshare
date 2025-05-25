@@ -1,10 +1,20 @@
 package de.studyshare.studyshare.service;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -12,6 +22,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import de.studyshare.studyshare.domain.Content;
 import de.studyshare.studyshare.domain.ContentCategory;
@@ -30,10 +42,16 @@ import de.studyshare.studyshare.repository.CourseRepository;
 import de.studyshare.studyshare.repository.FacultyRepository;
 import de.studyshare.studyshare.repository.LecturerRepository;
 import de.studyshare.studyshare.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 
 @Service
 public class ContentService {
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
+    private Path rootLocation;
 
     private final ContentRepository contentRepository;
     private final UserRepository userRepository;
@@ -53,6 +71,16 @@ public class ContentService {
         this.lecturerRepository = lecturerRepository;
     }
 
+    @PostConstruct // Initialize after dependency injection
+    public void init() {
+        try {
+            rootLocation = Paths.get(uploadDir);
+            Files.createDirectories(rootLocation);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not initialize storage location", e);
+        }
+    }
+
     @Transactional
     public List<ContentDTO> getAllContents() {
         return contentRepository.findAll().stream()
@@ -68,7 +96,7 @@ public class ContentService {
     }
 
     @Transactional
-    public ContentDTO createContent(ContentCreateRequest createRequest) {
+    public ContentDTO createContent(ContentCreateRequest createRequest, MultipartFile file) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
         User uploadedByUser = userRepository.findByUsername(currentUsername)
@@ -85,6 +113,25 @@ public class ContentService {
         if (!course.getFaculty().getId().equals(faculty.getId())) {
             throw new BadRequestException("The specified course (ID: " + course.getId()
                     + ") does not belong to the specified faculty (ID: " + faculty.getId() + ").");
+        }
+
+        String originalFilenameRaw = file.getOriginalFilename();
+        if (originalFilenameRaw == null) {
+            throw new BadRequestException("Uploaded file must have a filename.");
+        }
+        String originalFilename = StringUtils.cleanPath(originalFilenameRaw);
+        String uniqueFilename = UUID.randomUUID().toString() + "_" + originalFilename;
+
+        try {
+            if (file.isEmpty()) {
+                throw new BadRequestException("Failed to store empty file.");
+            }
+            Path destinationFile = this.rootLocation.resolve(
+                    Paths.get(uniqueFilename))
+                    .normalize().toAbsolutePath();
+            Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store file.", e);
         }
 
         Content content = new Content();
@@ -205,5 +252,19 @@ public class ContentService {
 
         Page<Content> contentPage = contentRepository.findAll(spec, pageRequest);
         return contentPage.map(ContentDTO::fromEntity);
+    }
+
+    public Resource loadFileAsResource(String filename) {
+        try {
+            Path filePath = this.rootLocation.resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                return resource;
+            } else {
+                throw new ResourceNotFoundException("File not found " + filename);
+            }
+        } catch (MalformedURLException ex) {
+            throw new ResourceNotFoundException("File not found " + filename +": " + ex);
+        }
     }
 }

@@ -22,12 +22,12 @@ TODO User Verwalten
 TODO Kursstruktur verwalten
 
 # Backend
-TODO downloads Implementieren 
 TODO serverside token invalidation
-TODO Content rating feld hinzufügen
-    TODO frontend API anpassen
-    TODO Automatische berechnung auf basis von bewerungen -> muss jedes mal laufen, wenn eine Neue bewertung erstellt wird?
-TODO Page implementation fixen -> warn von springboot: For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
-TODO Browse feature basically auch für User 
-TODO Browse feature basically auch für Bewertungen
+    TODO frontend API anpassen (rating)
+TODO Browse feature basically auch für User (für admin seiten)
+TODO Browse feature basically auch für Bewertungen (für admin seiten)
 TODO Auf mariaDB umsteigen
+TODO Minio verwenden für Datei speicherung -> s3 sdk verwenden für kommunikation
+
+# CI/CD 
+TODO herausfinden wie man automatisch optionen wie localhost von erlaubten ips entfernt etc.

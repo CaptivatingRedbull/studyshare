@@ -1,10 +1,15 @@
 package de.studyshare.studyshare.controller;
 
+import java.io.IOException;
 import java.net.URI;
+import org.springframework.http.HttpHeaders;
+import java.nio.file.Files;
 import java.util.List;
 
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import de.studyshare.studyshare.domain.ContentCategory;
@@ -25,6 +31,7 @@ import de.studyshare.studyshare.dto.request.ContentCreateRequest;
 import de.studyshare.studyshare.dto.request.ContentUpdateRequest;
 import de.studyshare.studyshare.service.ContentService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 @RestController
 @RequestMapping("/api/contents")
@@ -50,9 +57,10 @@ public class ContentController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ContentDTO> createContent(@Valid @RequestBody ContentCreateRequest createRequest) {
+    public ResponseEntity<ContentDTO> createContent(@Valid @RequestBody ContentCreateRequest createRequest,
+            @NotNull @RequestParam("file") MultipartFile file) {
 
-        ContentDTO createdContent = contentService.createContent(createRequest);
+        ContentDTO createdContent = contentService.createContent(createRequest, file);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(createdContent.id())
@@ -106,7 +114,28 @@ public class ContentController {
             @RequestParam(required = false, defaultValue = "20") int size) {
 
         Page<ContentDTO> contentsPage = contentService.getFilteredAndSortedContents(
-                facultyId, courseId, lecturerId, category, searchTerm, sortBy, sortDirection, PageRequest.of(page, size));
+                facultyId, courseId, lecturerId, category, searchTerm, sortBy, sortDirection,
+                PageRequest.of(page, size));
         return ResponseEntity.ok(contentsPage);
+    }
+
+    @GetMapping("/download/{filename:.+}") 
+    public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
+        Resource file = contentService.loadFileAsResource(filename);
+
+        String contentType = null;
+        try {
+            contentType = Files.probeContentType(file.getFile().toPath());
+        } catch (IOException ex) {
+        }
+
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
+                .body(file);
     }
 }
