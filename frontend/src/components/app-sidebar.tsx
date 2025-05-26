@@ -30,7 +30,6 @@ import {
   SidebarMenuItem, 
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/AuthContext";
-import { SearchForm } from "./search-form";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
 

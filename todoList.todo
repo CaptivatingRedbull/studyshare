@@ -1,10 +1,10 @@
 # Frontend
 
 TODO input bereinigen -> code injection verhindern -> maybe auch backend
-TODO suche auf browse seite einbauen
 TODO browse seite scaling fixen bei schmaler darstellung
 TODO Content API ändern -> siehe backend
 TODO Maybe Einstellungen in user popup (untern links ecke)
+TODO Rating dialog implementieren
 
 ## noch nicht erstellte seiten
 ### allgemeine seiten
@@ -26,6 +26,7 @@ TODO serverside token invalidation
     TODO frontend API anpassen (rating)
 TODO Browse feature basically auch für User (für admin seiten)
 TODO Browse feature basically auch für Bewertungen (für admin seiten)
+TODO browse suche für content auch für lecturer, faculty, course anwenden
 TODO Auf mariaDB umsteigen
 TODO Minio verwenden für Datei speicherung -> s3 sdk verwenden für kommunikation
 

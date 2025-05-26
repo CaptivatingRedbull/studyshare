@@ -15,13 +15,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-    ArrowUpDown,
     Download,
     UserCircle,
     CalendarDays,
@@ -29,19 +22,20 @@ import {
     Users,
     BookOpen,
     Building,
-    Star
+    Star,
+    StarHalf,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { IconFileTypeJpg, IconFileTypePdf, IconFileTypeZip } from '@tabler/icons-react';
 import { browseContents } from '@/api/contentApi';
 import { Content, ContentCategory, Faculty, Course, Lecturer } from '@/lib/types';
-import { Pagination } from '@/components/ui/pagination';
-import { PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { getAllFaculties } from '@/api/facultyApi';
 import { getAllCourses } from '@/api/courseApi';
 import { getAllLecturers } from '@/api/lecturerApi';
 import { toastError, toastSuccess } from '@/components/ui/sonner';
 import { apiClient } from '@/api/apiClient';
+import { Input } from '@/components/ui/input';
 
 const contentCategories: ContentCategory[] = ["PDF", "IMAGE", "ZIP"];
 
@@ -49,12 +43,10 @@ const sortOptions = [
     { value: 'uploadDate', label: 'Hochladedatum' },
     { value: 'title', label: 'Titel (A-Z)' },
     { value: 'rating', label: 'Bewertung' }
-
 ];
 
-// --- Helper function to get category icon ---
 const GetCategoryIcon = ({ category, className }: { category: ContentCategory, className?: string }) => {
-    const defaultClassName = "mr-2 h-4 w-4";
+    const defaultClassName = "mr-1 h-4 w-4 shrink-0"; // Minimal margin for icon-text pairing
     const combinedClassName = `${defaultClassName} ${className || ''}`;
     switch (category) {
         case 'PDF': return <IconFileTypePdf className={combinedClassName} />;
@@ -64,29 +56,44 @@ const GetCategoryIcon = ({ category, className }: { category: ContentCategory, c
     }
 };
 
+const RenderStars = ({ rating }: { rating?: number }) => {
+    const totalStars = 5;
+    let displayRating = 0;
+
+    if (rating !== undefined && rating > 0) {
+        displayRating = Math.round(rating * 2) / 2;
+    }
+
+    const stars = [];
+    for (let i = 1; i <= totalStars; i++) {
+        if (displayRating === 0) {
+            stars.push(<Star key={`star-off-${i}`} className="h-4 w-4 text-muted-foreground/50" />);
+        } else if (i <= displayRating) {
+            stars.push(<Star key={`star-filled-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
+        } else if (i - 0.5 === displayRating) {
+            stars.push(<StarHalf key={`star-half-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
+        } else {
+            stars.push(<Star key={`star-empty-${i}`} className="h-4 w-4 text-yellow-400" />);
+        }
+    }
+    return <div className="flex items-center">{stars}</div>;
+};
+
+
 export function BrowsePage() {
-    // State for filters
     const [facultyId, setFacultyId] = useState<number | undefined>(undefined);
     const [courseId, setCourseId] = useState<number | undefined>(undefined);
     const [lecturerId, setLecturerId] = useState<number | undefined>(undefined);
     const [category, setCategory] = useState<ContentCategory | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState<string>('');
-
-    // State for sorting
     const [sortBy, setSortBy] = useState<"uploadDate" | "title" | "rating">("uploadDate");
     const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
-
-    // State for pagination
     const [currentPage, setCurrentPage] = useState(0);
     const [pageSize, setPageSize] = useState(12);
-
-    // State for data
     const [contents, setContents] = useState<Content[]>([]);
     const [totalElements, setTotalElements] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(true);
-
-    // Data for filter options
     const [faculties, setFaculties] = useState<Faculty[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [lecturers, setLecturers] = useState<Lecturer[]>([]);
@@ -95,7 +102,6 @@ export function BrowsePage() {
         getAllFaculties().then(data => setFaculties(data));
         getAllCourses().then(data => setCourses(data));
         getAllLecturers().then(data => setLecturers(data));
-
         loadContents();
     }, []);
 
@@ -107,17 +113,9 @@ export function BrowsePage() {
         setLoading(true);
         try {
             const result = await browseContents(
-                facultyId,
-                courseId,
-                lecturerId,
-                category,
-                searchTerm,
-                sortBy,
-                sortDirection,
-                currentPage,
-                pageSize
+                facultyId, courseId, lecturerId, category, searchTerm,
+                sortBy, sortDirection, currentPage, pageSize
             );
-
             setContents(result.content);
             setTotalElements(result.totalElements);
             setTotalPages(result.totalPages);
@@ -185,13 +183,11 @@ export function BrowsePage() {
             let downloadFilename = filePath;
             if (contentTitle) {
                 const extensionMatch = filePath.match(/\.([^.]+)$/);
-                const extension = extensionMatch ? extensionMatch[0] : ''; // Includes the dot e.g. ".txt"
-                downloadFilename = `${contentTitle.replace(/[^\w\s.-]/gi, '_')}${extension}`; // Sanitize title and add extension
+                const extension = extensionMatch ? extensionMatch[0] : '';
+                downloadFilename = `${contentTitle.replace(/[^\w\s.-]/gi, '_')}${extension}`;
             } else {
-                // Fallback if title is not available, use the filePath (which has the extension)
-                downloadFilename = filePath.substring(filePath.lastIndexOf('/') + 1); // Extract filename from path if it's a path
+                downloadFilename = filePath.substring(filePath.lastIndexOf('/') + 1);
             }
-
             link.setAttribute('download', downloadFilename);
             document.body.appendChild(link);
             link.click();
@@ -204,18 +200,16 @@ export function BrowsePage() {
         }
     };
 
+    const handleRatingClick = (contentId: number) => {
+        console.log("Rating clicked for content ID:", contentId);
+    };
+
     return (
         <div className="p-4 md:p-6 space-y-6">
-            {/* Filter Section */}
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
-                    <Select
-                        value={facultyId?.toString() || 'all'}
-                        onValueChange={handleFacultyChange}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Fakultät wählen" />
-                        </SelectTrigger>
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap md:flex-grow gap-4 w-full">
+                    <Select value={facultyId?.toString() || 'all'} onValueChange={handleFacultyChange}>
+                        <SelectTrigger className="w-full sm:w-auto md:flex-1 min-w-[150px]"><SelectValue placeholder="Fakultät wählen" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Alle Fakultäten</SelectItem>
                             {faculties.map(faculty => (
@@ -223,86 +217,56 @@ export function BrowsePage() {
                             ))}
                         </SelectContent>
                     </Select>
-
-                    <Select
-                        value={courseId?.toString() || 'all'}
-                        onValueChange={handleCourseChange}
-                        disabled={!facultyId}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Kurs wählen" />
-                        </SelectTrigger>
+                    <Select value={courseId?.toString() || 'all'} onValueChange={handleCourseChange} disabled={!facultyId}>
+                        <SelectTrigger className="w-full sm:w-auto md:flex-1 min-w-[150px]"><SelectValue placeholder="Kurs wählen" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Alle Kurse</SelectItem>
-                            {courses
-                                .filter(course => !facultyId || course.faculty.id === facultyId)
-                                .map(course => (
-                                    <SelectItem key={course.id} value={course.id.toString()}>{course.name}</SelectItem>
-                                ))
-                            }
+                            {courses.filter(course => !facultyId || course.faculty.id === facultyId)
+                                .map(course => (<SelectItem key={course.id} value={course.id.toString()}>{course.name}</SelectItem>))}
                         </SelectContent>
                     </Select>
-
-                    <Select
-                        value={lecturerId?.toString() || 'all'}
-                        onValueChange={handleLecturerChange}
-                        disabled={!courseId}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Dozent wählen" />
-                        </SelectTrigger>
+                    <Select value={lecturerId?.toString() || 'all'} onValueChange={handleLecturerChange} disabled={!courseId}>
+                        <SelectTrigger className="w-full sm:w-auto md:flex-1 min-w-[150px]"><SelectValue placeholder="Dozent wählen" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Alle Dozenten</SelectItem>
-                            {lecturers
-                                .filter(lecturer => !courseId || lecturer.courseIds.includes(courseId))
-                                .map(lecturer => (
-                                    <SelectItem key={lecturer.id} value={lecturer.id.toString()}>{lecturer.name}</SelectItem>
-                                ))
-                            }
+                            {lecturers.filter(lecturer => !courseId || lecturer.courseIds.includes(courseId))
+                                .map(lecturer => (<SelectItem key={lecturer.id} value={lecturer.id.toString()}>{lecturer.name}</SelectItem>))}
                         </SelectContent>
                     </Select>
-
-                    <Select
-                        value={category || 'all'}
-                        onValueChange={handleCategoryChange}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Inhaltstyp wählen" />
-                        </SelectTrigger>
+                    <Select value={category || 'all'} onValueChange={handleCategoryChange}>
+                        <SelectTrigger className="w-full sm:w-auto md:flex-1 min-w-[150px]"><SelectValue placeholder="Inhaltstyp wählen" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Alle Typen</SelectItem>
-                            {contentCategories.map(cat => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            {contentCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={sortBy} onValueChange={(value) => handleSortChange(sortOptions.find(opt => opt.value === value)!)}>
+                        <SelectTrigger className="w-full sm:w-auto md:flex-1 min-w-[180px]">
+                            <SelectValue placeholder="Sortieren nach" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {sortOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                </div>
-
-                <div className="md:ml-auto flex-shrink-0">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline">
-                                <ArrowUpDown className="mr-2 h-4 w-4" />
-                                Sortieren nach: {sortOptions.find(opt => opt.value === sortBy)?.label || 'Datum'}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {sortOptions.map((option) => (
-                                <DropdownMenuItem
-                                    key={option.value}
-                                    onClick={() => handleSortChange(option)}
-                                >
-                                    {option.label}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Input
+                        type="text"
+                        placeholder="Suche nach Titel, Beschreibung, etc."
+                        value={searchTerm}
+                        onChange={e => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(0);
+                        }}
+                        className="w-full sm:w-auto md:flex-1 min-w-[180px]"
+                    />
                 </div>
             </div>
 
             <Separator />
 
-            {/* Content Display Section */}
             {loading ? (
                 <div className="text-center py-10">
                     <p className="text-xl font-semibold text-muted-foreground">Lädt Inhalte...</p>
@@ -313,57 +277,57 @@ export function BrowsePage() {
                         {contents.map(item => (
                             <Card key={item.id} className="flex flex-col">
                                 <CardHeader>
-                                    <CardTitle className="text-lg line-clamp-2">{item.title}</CardTitle>
-                                    <div className="flex items-center text-sm text-muted-foreground pt-1">
-                                        <GetCategoryIcon category={item.contentCategory} />
-                                        <span>{item.contentCategory}</span>
-                                        <span className="mx-1.5">·</span>
-                                        <CalendarDays className="mr-1.5 h-4 w-4" />
-                                        <span>{new Date(item.uploadDate).toLocaleDateString()}</span>
-                                        {item.averageRating !== undefined && item.averageRating > 0 && ( // Check if rating exists
-                                            <>
-                                                <span className="mx-1.5">·</span>
-                                                <Star className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                                {/* You might need to import Star icon from lucide-react */}
-                                                <span>{item.averageRating.toFixed(1)}</span>
-                                            </>
-                                        )}
-                                    </div>
+                                    <CardTitle className="text-lg line-clamp-2 break-words">{item.title}</CardTitle>
                                 </CardHeader>
-                                <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground line-clampw-3">{item.title}</p>
-                                </CardContent>
-                                <CardFooter className="flex flex-col items-start space-y-2 pt-4 border-t">
-                                    <div className="flex justify-between w-full text-xs text-muted-foreground">
+                                <CardContent className="flex-grow content-end">
+                                    <div className="flex flex-col items-center text-sm text-muted-foreground flex-wrap gap-y-1">
                                         <div className="flex items-center">
-                                            <UserCircle className="mr-1.5 h-4 w-4" />
-                                            <span>{item.uploadedBy?.firstName} {item.uploadedBy?.lastName}</span>
+                                            <GetCategoryIcon category={item.contentCategory} />
+                                            <span className="truncate">{item.contentCategory}</span>
                                         </div>
-
+                                        <div className="flex items-center">
+                                            <CalendarDays className="mr-1 h-4 w-4 shrink-0" />
+                                            <span className="truncate">{new Date(item.uploadDate).toLocaleDateString()}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => handleRatingClick(item.id)}
+                                            className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                                            aria-label={`Bewertung für ${item.title} ansehen oder abgeben`}
+                                        >
+                                            <RenderStars rating={item.averageRating} />
+                                            {item.averageRating !== undefined && item.averageRating > 0 && (
+                                                <span className="ml-1">{item.averageRating.toFixed(1)}</span>
+                                            )}
+                                        </button>
                                     </div>
-                                    <div className="w-full space-y-1 text-xs text-muted-foreground">
-                                        <div className="flex items-center">
-                                            <Building className="mr-1.5 h-3.5 w-3.5" />
-                                            <span>{item.faculty?.name || 'N/A'}</span>
+                                </CardContent>
+                                <CardFooter className="flex flex-col items-center  pt-4 border-t">
+                                    <div className="flex flex-col w-full text-xs text-muted-foreground space-y-1">
+                                        <div className="flex justify-center ">
+                                            <UserCircle className="mr-1.5 h-4 w-4 shrink-0" />
+                                            <span className="truncate">{item.uploadedBy?.firstName} {item.uploadedBy?.lastName}</span>
                                         </div>
-                                        <div className="flex items-center">
-                                            <BookOpen className="mr-1.5 h-3.5 w-3.5" />
-                                            <span>{item.course?.name || 'N/A'}</span>
+                                        <div className="flex justify-center">
+                                            <Building className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                                            <span className="truncate">{item.faculty?.name || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-center">
+                                            <BookOpen className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                                            <span className="truncate">{item.course?.name || 'N/A'}</span>
                                         </div>
                                         {item.lecturer && (
-                                            <div className="flex items-center">
-                                                <Users className="mr-1.5 h-3.5 w-3.5" />
+                                            <div className="flex justify-center">
+                                                <Users className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate">{item.lecturer.name}</span>
                                             </div>
                                         )}
                                     </div>
                                     <Button variant="outline" size="sm" className="w-full mt-2"
                                         onClick={() => {
-                                            console.log("Attempting to download:", item.title, "with filePath:", item.filePath); // Log the item and filePath
                                             if (item.filePath && typeof item.filePath === 'string' && item.filePath !== "null" && item.filePath !== "undefined") {
                                                 handleDownload(item.filePath, item.title);
                                             } else {
                                                 toastError({ title: "Download Fehler", message: "Dateipfad ist ungültig oder fehlt." });
-                                                console.error("Invalid or missing filePath for download:", item.filePath, "for item:", item);
                                             }
                                         }}>
                                         <Download className="mr-2 h-4 w-4" />
@@ -374,7 +338,6 @@ export function BrowsePage() {
                         ))}
                     </div>
 
-                    {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="mt-6 flex justify-center">
                             <Pagination>
@@ -385,7 +348,6 @@ export function BrowsePage() {
                                             aria-disabled={currentPage === 0}
                                         />
                                     </PaginationItem>
-
                                     {[...Array(totalPages)].map((_, index) => (
                                         <PaginationItem key={index}>
                                             <Button
@@ -397,7 +359,6 @@ export function BrowsePage() {
                                             </Button>
                                         </PaginationItem>
                                     ))}
-
                                     <PaginationItem>
                                         <PaginationNext
                                             onClick={currentPage === totalPages - 1 ? undefined : () => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}
@@ -414,8 +375,7 @@ export function BrowsePage() {
                     <p className="text-xl font-semibold text-muted-foreground">Keine Inhalte gefunden.</p>
                     <p className="text-sm text-muted-foreground">Versuche andere Filterkriterien.</p>
                 </div>
-            )
-            }
-        </div >
+            )}
+        </div>
     );
 }
