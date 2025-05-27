@@ -9,20 +9,36 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * Cross-Origin Resource Sharing (CORS) configuration for the application.
+ * This class defines CORS policies to allow the frontend application to
+ * communicate
+ * with the backend API securely across different origins.
+ */
 @Configuration
 public class CorsConfig {
-  @Bean
-  @Primary
-  public CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOrigins(List.of("http://192.168.67.63:5173")); // your front-end origin
-    config.setAllowedOrigins(List.of("http://localhost:5173")); // your front-end origin
-    config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-    config.setAllowedHeaders(List.of("*"));
-    config.setAllowCredentials(true);
+    /**
+     * Configures CORS settings for the application.
+     * 
+     * @return CorsConfigurationSource that defines allowed origins, methods,
+     *         headers,
+     *         and whether credentials are supported for cross-origin requests.
+     */
+    @Bean
+    @Primary
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        // allow orgins, HTTP-methods, headers and credentials
+        config.setAllowedOrigins(List.of("http://192.168.67.63:5173", "http://localhost:5173")); // frontend origins
+                                                                                                 // (deployment server
+                                                                                                 // and local)
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
 
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/api/**", config);
-    return source;
-  }
+        // Apply these CORS settings to all API endpoints
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        return source;
+    }
 }

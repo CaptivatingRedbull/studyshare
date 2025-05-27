@@ -13,9 +13,24 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Specification class for filtering Content entities based on various criteria.
+ * Provides methods to create dynamic queries for content filtering.
+ */
 @Component
 public class ContentSpecifications {
 
+    /**
+     * Creates a Specification to filter Content entities based on the provided
+     * criteria.
+     *
+     * @param facultyId  the ID of the faculty to filter by (optional)
+     * @param courseId   the ID of the course to filter by (optional)
+     * @param lecturerId the ID of the lecturer to filter by (optional)
+     * @param category   the content category to filter by (optional)
+     * @param searchTerm a search term to filter content titles (optional)
+     * @return a Specification for filtering Content entities
+     */
     public static Specification<Content> filterBy(
             Long facultyId,
             Long courseId,
@@ -43,8 +58,7 @@ public class ContentSpecifications {
             if (searchTerm != null && !searchTerm.trim().isEmpty()) {
                 String likePattern = "%" + searchTerm.toLowerCase() + "%";
                 predicates.add(criteriaBuilder.or(
-                    criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), likePattern)
-                ));
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), likePattern)));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

@@ -22,6 +22,10 @@ import de.studyshare.studyshare.repository.FacultyRepository;
 import de.studyshare.studyshare.repository.LecturerRepository;
 import de.studyshare.studyshare.repository.UserRepository;
 
+/**
+ * Configuration class for generating test data in the development profile.
+ * This class initializes the database with sample data for testing purposes.
+ */
 @Configuration
 @Profile("dev")
 public class TestDataGenerator {
@@ -34,7 +38,7 @@ public class TestDataGenerator {
             LecturerRepository lecturerRepository,
             ContentRepository contentRepository,
             PasswordEncoder passwordEncoder) {
-        
+
         return args -> {
             // Test data entities
             User testUser;
@@ -60,7 +64,8 @@ public class TestDataGenerator {
                     passwordEncoder.encode("password"), Role.STUDENT);
             userRepository.save(testUser);
 
-            adminUser = new User("Admin", "User", "adminGenData@example.com", "adminGenData", passwordEncoder.encode("adminpass"),
+            adminUser = new User("Admin", "User", "adminGenData@example.com", "adminGenData",
+                    passwordEncoder.encode("adminpass"),
                     Role.ADMIN);
             userRepository.save(adminUser);
 
@@ -78,7 +83,7 @@ public class TestDataGenerator {
 
             // Setup Courses
             courseAlgo = new Course("Algorithms", facultyCS);
-            courseRepository.save(courseAlgo); // Save before adding lecturers
+            courseRepository.save(courseAlgo); 
             courseWebDev = new Course("Web Development", facultyCS);
             courseRepository.save(courseWebDev);
             courseMath = new Course("Calculus", facultyEng);
@@ -90,10 +95,11 @@ public class TestDataGenerator {
             courseMath.addLecturer(lecturerSmith);
             courseRepository.saveAll(Arrays.asList(courseAlgo, courseWebDev, courseMath));
             lecturerRepository.saveAll(Arrays.asList(lecturerDoe, lecturerSmith)); // Save lecturers again after course
-                                                                                  // association
+                                                                                   // association
 
             // Setup Content items with diverse data
-            content1 = new Content("Java Basics", "Introduction to Java programming.", ContentCategory.PDF, facultyCS, courseAlgo,
+            content1 = new Content("Java Basics", "Introduction to Java programming.", ContentCategory.PDF, facultyCS,
+                    courseAlgo,
                     lecturerDoe, testUser, LocalDate.now().minusDays(5), 0, 0);
             content2 = new Content("HTML & CSS Guide", "Guide for web frontend.", ContentCategory.PDF, facultyCS,
                     courseWebDev, lecturerSmith, adminUser, LocalDate.now().minusDays(2), 1, 2);

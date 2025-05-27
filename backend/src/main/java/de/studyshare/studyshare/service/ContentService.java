@@ -45,6 +45,11 @@ import de.studyshare.studyshare.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 
+/**
+ * Service class for managing content-related operations.
+ * Provides methods to create, update, delete, and retrieve content,
+ * as well as file handling and security checks.
+ */
 @Service
 public class ContentService {
 
@@ -59,6 +64,15 @@ public class ContentService {
     private final FacultyRepository facultyRepository;
     private final LecturerRepository lecturerRepository;
 
+    /**
+     * Constructs a ContentService with the specified repositories.
+     *
+     * @param contentRepository  the repository to access content data
+     * @param userRepository     the repository to access user data
+     * @param courseRepository   the repository to access course data
+     * @param facultyRepository  the repository to access faculty data
+     * @param lecturerRepository the repository to access lecturer data
+     */
     public ContentService(ContentRepository contentRepository,
             UserRepository userRepository,
             CourseRepository courseRepository,
@@ -71,6 +85,10 @@ public class ContentService {
         this.lecturerRepository = lecturerRepository;
     }
 
+    /**
+     * Initializes the storage location for uploaded files.
+     * Creates the directory if it does not exist.
+     */
     @PostConstruct // Initialize after dependency injection
     public void init() {
         try {
@@ -81,6 +99,11 @@ public class ContentService {
         }
     }
 
+    /**
+     * Returns the root location for file uploads.
+     *
+     * @return the root location as a Path object
+     */
     @Transactional
     public List<ContentDTO> getAllContents() {
         return contentRepository.findAll().stream()
@@ -88,6 +111,14 @@ public class ContentService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves content by its ID.
+     *
+     * @param id the ID of the content to retrieve
+     * @return the ContentDTO representing the content
+     * @throws ResourceNotFoundException if the content with the specified ID does
+     *                                   not exist
+     */
     @Transactional
     public ContentDTO getContentById(Long id) {
         return contentRepository.findById(id)
@@ -95,6 +126,17 @@ public class ContentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Content", "id", id));
     }
 
+    /**
+     * Creates new content with the specified details and file.
+     *
+     * @param createRequest the request containing content creation details
+     * @param file          the file to be uploaded
+     * @return the created ContentDTO
+     * @throws BadRequestException       if the uploaded file is empty or has no
+     *                                   filename
+     * @throws ResourceNotFoundException if the user, course, or faculty does not
+     *                                   exist
+     */
     @Transactional
     public ContentDTO createContent(ContentCreateRequest createRequest, MultipartFile file) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -143,12 +185,23 @@ public class ContentService {
         content.setLecturer(lecturer);
         content.setTitle(createRequest.title());
         content.setFilePath(uniqueFilename);
-        
 
         Content savedContent = contentRepository.save(content);
         return ContentDTO.fromEntity(savedContent);
     }
 
+    /**
+     * Updates existing content with the specified ID using the provided update
+     * request.
+     *
+     * @param id            the ID of the content to update
+     * @param updateRequest the request containing updated content details
+     * @return the updated ContentDTO
+     * @throws ResourceNotFoundException if the content with the specified ID does
+     *                                   not exist
+     * @throws BadRequestException       if the course or faculty does not match the
+     *                                   content's associations
+     */
     @Transactional
     public ContentDTO updateContent(Long id, ContentUpdateRequest updateRequest) {
         Content content = contentRepository.findById(id)
@@ -184,6 +237,13 @@ public class ContentService {
         return ContentDTO.fromEntity(updatedContent);
     }
 
+    /**
+     * Deletes content by its ID.
+     *
+     * @param id the ID of the content to delete
+     * @throws ResourceNotFoundException if the content with the specified ID does
+     *                                   not exist
+     */
     @Transactional
     public void deleteContent(Long id) {
         Content content = contentRepository.findById(id)
@@ -193,6 +253,14 @@ public class ContentService {
 
     }
 
+    /**
+     * Increments the report count for the content with the specified ID.
+     *
+     * @param id the ID of the content to increment the report count for
+     * @return the updated ContentDTO
+     * @throws ResourceNotFoundException if the content with the specified ID does
+     *                                   not exist
+     */
     @Transactional
     public ContentDTO incrementReportCount(Long id) {
         Content content = contentRepository.findById(id)
@@ -202,6 +270,14 @@ public class ContentService {
         return ContentDTO.fromEntity(contentRepository.save(content));
     }
 
+    /**
+     * Increments the outdated count for the content with the specified ID.
+     *
+     * @param id the ID of the content to increment the outdated count for
+     * @return the updated ContentDTO
+     * @throws ResourceNotFoundException if the content with the specified ID does
+     *                                   not exist
+     */
     @Transactional
     public ContentDTO incrementOutdatedCount(Long id) {
         Content content = contentRepository.findById(id)
@@ -211,6 +287,12 @@ public class ContentService {
         return ContentDTO.fromEntity(contentRepository.save(content));
     }
 
+    /**
+     * Retrieves all contents associated with a specific faculty ID.
+     *
+     * @param facultyId the ID of the faculty to filter content by
+     * @return a list of ContentDTOs associated with the specified faculty ID
+     */
     @Transactional
     public List<ContentDTO> getContentsByFacultyId(Long facultyId) {
         return contentRepository.findByFacultyId(facultyId).stream()
@@ -218,6 +300,12 @@ public class ContentService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all contents associated with a specific course ID.
+     *
+     * @param courseId the ID of the course to filter content by
+     * @return a list of ContentDTOs associated with the specified course ID
+     */
     @Transactional
     public List<ContentDTO> getContentsByCourseId(Long courseId) {
         return contentRepository.findByCourseId(courseId).stream()
@@ -225,6 +313,20 @@ public class ContentService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves filtered and sorted contents based on various criteria.
+     *
+     * @param facultyId     the ID of the faculty to filter by (optional)
+     * @param courseId      the ID of the course to filter by (optional)
+     * @param lecturerId    the ID of the lecturer to filter by (optional)
+     * @param category      the content category to filter by (optional)
+     * @param searchTerm    a search term to filter content titles (optional)
+     * @param sortBy        the field to sort by (optional, defaults to uploadDate)
+     * @param sortDirection the direction of sorting (asc or desc, optional,
+     *                      defaults to asc)
+     * @param pageable      pagination information
+     * @return a paginated list of ContentDTOs matching the criteria
+     */
     @Transactional
     public Page<ContentDTO> getFilteredAndSortedContents(
             Long facultyId,
@@ -254,6 +356,14 @@ public class ContentService {
         return contentPage.map(ContentDTO::fromEntity);
     }
 
+    /**
+     * Loads a file as a resource based on its filename.
+     *
+     * @param filename the name of the file to load
+     * @return the Resource representing the file
+     * @throws ResourceNotFoundException if the file does not exist or is not
+     *                                   readable
+     */
     public Resource loadFileAsResource(String filename) {
         try {
             Path filePath = this.rootLocation.resolve(filename).normalize();
@@ -264,7 +374,7 @@ public class ContentService {
                 throw new ResourceNotFoundException("File not found " + filename);
             }
         } catch (MalformedURLException ex) {
-            throw new ResourceNotFoundException("File not found " + filename +": " + ex);
+            throw new ResourceNotFoundException("File not found " + filename + ": " + ex);
         }
     }
 }

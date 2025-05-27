@@ -22,6 +22,10 @@ import de.studyshare.studyshare.repository.ContentRepository;
 import de.studyshare.studyshare.repository.ReviewRepository;
 import de.studyshare.studyshare.repository.UserRepository;
 
+/**
+ * Service class for managing reviews of content.
+ * Provides methods to create, update, delete, and retrieve reviews.
+ */
 @Service
 public class ReviewService {
 
@@ -29,6 +33,13 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final ContentRepository contentRepository;
 
+    /**
+     * Constructs a ReviewService with the specified repositories.
+     *
+     * @param reviewRepository  the repository for managing reviews
+     * @param userRepository    the repository for managing users
+     * @param contentRepository the repository for managing content
+     */
     public ReviewService(ReviewRepository reviewRepository,
             UserRepository userRepository,
             ContentRepository contentRepository) {
@@ -37,6 +48,13 @@ public class ReviewService {
         this.contentRepository = contentRepository;
     }
 
+    /**
+     * Retrieves all reviews for a specific content item.
+     *
+     * @param contentId the ID of the content to retrieve reviews for
+     * @return a list of ReviewDTO objects representing the reviews for the content
+     * @throws ResourceNotFoundException if no content with the given ID exists
+     */
     @Transactional(readOnly = true)
     public List<ReviewDTO> getAllReviewsForContent(Long contentId) {
         if (!contentRepository.existsById(contentId)) {
@@ -48,6 +66,13 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves a review by its ID.
+     *
+     * @param reviewId the ID of the review to retrieve
+     * @return a ReviewDTO object representing the review
+     * @throws ResourceNotFoundException if no review with the given ID exists
+     */
     @Transactional(readOnly = true)
     public ReviewDTO getReviewById(Long reviewId) {
         return reviewRepository.findById(reviewId)
@@ -55,6 +80,17 @@ public class ReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException("Review", "id", reviewId));
     }
 
+    /**
+     * Creates a new review for a specific content item.
+     *
+     * @param contentId     the ID of the content to review
+     * @param createRequest the request containing the details of the review to
+     *                      create
+     * @return a ReviewDTO object representing the created review
+     * @throws ResourceNotFoundException if no content with the given ID exists
+     * @throws BadRequestException       if the user tries to review their own
+     *                                   content or has already reviewed it
+     */
     @Transactional
     public ReviewDTO createReview(Long contentId, ReviewCreateRequest createRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -86,6 +122,16 @@ public class ReviewService {
         return ReviewDTO.fromEntity(savedReview);
     }
 
+    /**
+     * Updates an existing review.
+     *
+     * @param reviewId      the ID of the review to update
+     * @param updateRequest the request containing the updated details of the review
+     * @return a ReviewDTO object representing the updated review
+     * @throws ResourceNotFoundException if no review with the given ID exists
+     * @throws AccessDeniedException     if the user is not authorized to update the
+     *                                   review
+     */
     @Transactional
     public ReviewDTO updateReview(Long reviewId, ReviewUpdateRequest updateRequest) {
         Review review = reviewRepository.findById(reviewId)
@@ -115,6 +161,14 @@ public class ReviewService {
         return ReviewDTO.fromEntity(updatedReview);
     }
 
+    /**
+     * Deletes a review by its ID.
+     *
+     * @param reviewId the ID of the review to delete
+     * @throws ResourceNotFoundException if no review with the given ID exists
+     * @throws AccessDeniedException     if the user is not authorized to delete the
+     *                                   review
+     */
     @Transactional
     public void deleteReview(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
@@ -133,18 +187,25 @@ public class ReviewService {
         updateContentAverageRating(contentId);
     }
 
+    /**
+     * Updates the average rating of the content based on its reviews.
+     *
+     * @param contentId the ID of the content to update the average rating for
+     * @throws ResourceNotFoundException if no content with the given ID exists
+     */
     private void updateContentAverageRating(Long contentId) {
         Content content = contentRepository.findById(contentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Content", "id", contentId + " (while updating average rating)"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Content", "id",
+                        contentId + " (while updating average rating)"));
+
         List<Review> reviews = reviewRepository.findByContentId(contentId);
         if (reviews.isEmpty()) {
             content.setAverageRating(0.0);
         } else {
             double average = reviews.stream()
-                                  .mapToInt(Review::getStars)
-                                  .average()
-                                  .orElse(0.0);
+                    .mapToInt(Review::getStars)
+                    .average()
+                    .orElse(0.0);
             average = Math.round(average * 10.0) / 10.0;
             content.setAverageRating(average);
         }
