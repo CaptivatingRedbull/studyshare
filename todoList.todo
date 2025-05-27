@@ -5,6 +5,7 @@ TODO browse seite scaling fixen bei schmaler darstellung
 TODO Content API ändern -> siehe backend
 TODO Maybe Einstellungen in user popup (untern links ecke)
 TODO Rating dialog implementieren
+TODO frontend API anpassen (rating)
 
 ## noch nicht erstellte seiten
 ### allgemeine seiten
@@ -22,16 +23,16 @@ TODO User Verwalten
 TODO Kursstruktur verwalten
 
 # Backend
-TODO serverside token invalidation
-    TODO frontend API anpassen (rating)
 TODO Browse feature basically auch für User (für admin seiten)
 TODO Browse feature basically auch für Bewertungen (für admin seiten)
 TODO browse suche für content auch für lecturer, faculty, course anwenden
 TODO Auf mariaDB umsteigen
-TODO doku erstellen
 TODO Testcontainers für unittest verweden
 TODO Minio verwenden für Datei speicherung -> s3 sdk verwenden für kommunikation
-
+TODO Tests für logout -> token invalidation
 
 # CI/CD 
 TODO herausfinden wie man automatisch optionen wie localhost von erlaubten ips entfernt etc.
+
+#Präsentation
+TODO Serverside token invalidation (maybe)

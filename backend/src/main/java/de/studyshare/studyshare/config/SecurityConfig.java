@@ -15,16 +15,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import de.studyshare.studyshare.service.JpaUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Security configuration class for the application.
- * 
- * This class configures Spring Security with JWT authentication, defines access
- * rules,
- * CORS settings, and sets up the authentication flow. It implements a stateless
- * authentication mechanism suitable for REST APIs.
+ * Security configuration class for the StudyShare application.
+ * This class configures security settings, including JWT authentication,
+ * CORS, CSRF protection, and session management.
  */
 @Configuration
 @EnableWebSecurity
@@ -34,71 +30,61 @@ public class SecurityConfig {
     private final JwtRequestFilter jwtRequestFilter;
 
     /**
-     * Constructs a new SecurityConfig with required dependencies.
-     * 
-     * @param jpaUserDetailsService Service for loading user details
-     * @param jwtRequestFilter      Filter that processes JWT authentication tokens
+     * Constructor for SecurityConfig that initializes the JwtRequestFilter.
+     *
+     * @param jwtRequestFilter The JWT request filter to be used in the security
+     *                         configuration.
      */
-    public SecurityConfig(JpaUserDetailsService jpaUserDetailsService, JwtRequestFilter jwtRequestFilter) {
+    public SecurityConfig(JwtRequestFilter jwtRequestFilter) {
         this.jwtRequestFilter = jwtRequestFilter;
     }
 
     /**
-     * Configures the security filter chain for HTTP requests.
-     * 
-     * This method:
-     * - Applies CORS configuration
-     * - Disables CSRF protection
-     * - Configures frame options to allow H2 console access (will be removed in
-     * production)
-     * - Sets up authorization rules for different endpoints
-     * - Configures stateless session management
-     * - Adds the JWT request filter
-     * - Handles authentication exceptions
+     * Configures the security filter chain for the application.
      *
-     * @param http       The HttpSecurity object to configure
-     * @param corsSource The CORS configuration source
-     * @return The built SecurityFilterChain
-     * @throws Exception if configuration fails
+     * @param http       The HttpSecurity object to configure security settings.
+     * @param corsSource The CorsConfigurationSource for handling CORS requests.
+     * @return The configured SecurityFilterChain.
+     * @throws Exception If an error occurs during configuration.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsSource)
             throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsSource))
-                // Disable CSRF protection as we use JWT tokens
                 .csrf(csrf -> csrf.disable())
-                // Allow H2 console access (to be removed in production)
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
                 .authorizeHttpRequests(auth -> auth
-                        // Allow access to all public entpoints
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll() // to be removed in production
-
+                        .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated())
-                // Configure stateless session management (no server-side sessions)
                 .sessionManagement(
                         sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint((request, response, authException) -> {
                             String expired = (String) request.getAttribute("expired");
+                            String blocklisted = (String) request.getAttribute("blocklisted");
+
                             if (expired != null) {
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
                                         "JWT Token has expired: " + expired);
+                            } else if (blocklisted != null) {
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                                        "JWT Token is blocklisted.");
                             } else {
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                        "Unauthorized: Access is denied");
+                                        "Unauthorized: " + authException.getMessage());
                             }
                         }));
         return http.build();
     }
 
     /**
-     * Creates a password encoder bean for secure password hashing.
+     * Provides a PasswordEncoder bean for encoding passwords.
      *
-     * @return BCryptPasswordEncoder for encoding passwords
+     * @return A BCryptPasswordEncoder instance.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -106,13 +92,12 @@ public class SecurityConfig {
     }
 
     /**
-     * Creates an authentication manager bean that uses the default authentication
-     * configuration.
+     * Provides an AuthenticationManager bean for managing authentication.
      *
-     * @param authenticationConfiguration The Spring Security authentication
-     *                                    configuration
-     * @return The authentication manager
-     * @throws Exception if configuration fails
+     * @param authenticationConfiguration The AuthenticationConfiguration to use.
+     * @return An AuthenticationManager instance.
+     * @throws Exception If an error occurs while creating the
+     *                   AuthenticationManager.
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)

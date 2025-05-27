@@ -4,6 +4,7 @@ import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -50,6 +51,16 @@ public class JwtUtil {
      */
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    /**
+     * Extracts the JWT ID (jti) from the JWT token.
+     *
+     * @param token The JWT token.
+     * @return The JTI from the token.
+     */
+    public String extractJti(String token) {
+        return extractClaim(token, Claims::getId);
     }
 
     /**
@@ -136,9 +147,10 @@ public class JwtUtil {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
+                .setId(UUID.randomUUID().toString())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(key, SignatureAlgorithm.HS512) // Using HS512
+                .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
 
@@ -167,7 +179,7 @@ public class JwtUtil {
      */
     public Boolean validateToken(String token) {
         try {
-            extractAllClaims(token); // This will throw an exception if the token is invalid or expired
+            extractAllClaims(token);
             return !isTokenExpired(token);
         } catch (Exception e) {
             // Log the exception (e.g., MalformedJwtException, ExpiredJwtException,
