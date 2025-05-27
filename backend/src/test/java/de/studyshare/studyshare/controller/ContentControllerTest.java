@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -27,6 +28,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import de.studyshare.studyshare.domain.Content;
@@ -47,7 +50,6 @@ import de.studyshare.studyshare.repository.LecturerRepository;
 import de.studyshare.studyshare.repository.UserRepository;
 import de.studyshare.studyshare.service.JpaUserDetailsService;
 import de.studyshare.studyshare.service.JwtUtil;
-
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -99,11 +101,12 @@ class ContentControllerTest {
     private Content content1, content2, content3, content4, content5;
 
     // Helper record for deserializing Page<ContentDTO>
-    // Ensure this matches the structure Spring Data REST uses for Page serialization
+    // Ensure this matches the structure Spring Data REST uses for Page
+    // serialization
     // or the structure returned by your custom DTO if you're using one for Page.
     // Based on the warning and Spring's default VIA_DTO serialization,
-    // the structure should include fields like 'content', 'totalPages', 'totalElements', 'number', 'size'.
-
+    // the structure should include fields like 'content', 'totalPages',
+    // 'totalElements', 'number', 'size'.
 
     @BeforeEach
     void setUp() {
@@ -145,7 +148,7 @@ class ContentControllerTest {
         courseWebDev.addLecturer(lecturerSmith);
         courseMath.addLecturer(lecturerSmith);
         courseRepository.saveAll(Arrays.asList(courseAlgo, courseWebDev, courseMath));
-        lecturerRepository.saveAll(Arrays.asList(lecturerDoe, lecturerSmith)); 
+        lecturerRepository.saveAll(Arrays.asList(lecturerDoe, lecturerSmith));
 
         // Setup Content items with diverse data
         content1 = new Content("Java Basics", "/path/to/java_basics.pdf", ContentCategory.PDF, facultyCS, courseAlgo,
@@ -159,7 +162,7 @@ class ContentControllerTest {
         content3 = new Content("Calculus Cheat Sheet", "/path/to/calculus.png", ContentCategory.IMAGE,
                 facultyEng, courseMath, lecturerSmith, testUser, LocalDate.now(), 1, 100);
         content3.setAverageRating(5.0);
-        
+
         content4 = new Content("Advanced Algorithms", "/path/to/adv_algo.pdf", ContentCategory.PDF,
                 facultyCS, courseAlgo, lecturerDoe, adminUser, LocalDate.now().minusDays(10), 10, 0);
         content4.setAverageRating(2.5);
@@ -169,6 +172,7 @@ class ContentControllerTest {
         content5.setAverageRating(0.0); // No reviews yet
 
         contentRepository.saveAll(Arrays.asList(content1, content2, content3, content4, content5));
+
     }
 
     private HttpHeaders jwtHeaders(String userJwt) {
@@ -178,20 +182,44 @@ class ContentControllerTest {
         return headers;
     }
 
+    private HttpEntity<MultiValueMap<String, Object>> contentCreateEntity(ContentCreateRequest contentCreateRequestDto,
+            String userJwt) {
+        HttpHeaders contentDataHeaders = new HttpHeaders();
+        contentDataHeaders.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<ContentCreateRequest> contentDataEntity = new HttpEntity<>(contentCreateRequestDto,
+                contentDataHeaders);
+
+        byte[] dummyFileContent = "dummy file content".getBytes();
+        ByteArrayResource fileResource = new ByteArrayResource(dummyFileContent) {
+            @Override
+            public String getFilename() {
+                return contentCreateRequestDto.title();
+            }
+        };
+
+        MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
+        multipartBody.add("contentData", contentDataEntity);
+        multipartBody.add("file", fileResource);
+
+        HttpHeaders multipartHeaders = jwtHeaders(testUserJwt);
+        multipartHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
+        HttpEntity<MultiValueMap<String, Object>> createRequestEntity = new HttpEntity<>(multipartBody,
+                multipartHeaders);
+        return createRequestEntity;
+    }
+
     @SuppressWarnings("null")
     @Test
     @DisplayName("Should create and fetch content by ID")
     void createAndGetContentById() {
         ContentCreateRequest req = new ContentCreateRequest(
-                ContentCategory.PDF, 
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
-                "Lecture 1" 
-        );
+                ContentCategory.PDF,
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
+                "Lecture 1");
 
-        HttpHeaders headers = jwtHeaders(testUserJwt);
-        HttpEntity<ContentCreateRequest> createRequest = new HttpEntity<>(req, headers);
+        HttpEntity<MultiValueMap<String, Object>> createRequest = contentCreateEntity(req, testUserJwt);
 
         ResponseEntity<ContentDTO> createResp = restTemplate
                 .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
@@ -217,29 +245,29 @@ class ContentControllerTest {
     void updateContent_asAdmin() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
                 "Lecture 2");
+        HttpEntity<MultiValueMap<String, Object>> createRequest = contentCreateEntity(req, testUserJwt);
 
-        HttpEntity<ContentCreateRequest> createReqAuth = new HttpEntity<>(req, jwtHeaders(adminUserJwt));
         ResponseEntity<ContentDTO> createResp = restTemplate
-                .exchange(baseUrl, HttpMethod.POST, createReqAuth, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
         assertThat(createResp.getBody().id()).isNotNull();
 
         ContentUpdateRequest updateReq = new ContentUpdateRequest(
                 ContentCategory.PDF,
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
                 "Lecture 2 Updated");
-        HttpEntity<ContentUpdateRequest> updateReqAuth = new HttpEntity<>(updateReq, jwtHeaders(adminUserJwt));
 
+        HttpEntity<ContentUpdateRequest> updateRequest = new HttpEntity<>(updateReq, jwtHeaders(testUserJwt));
         @SuppressWarnings("null")
         ResponseEntity<ContentDTO> updateResp = restTemplate
-                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.PUT, updateReqAuth,
+                .exchange(baseUrl + "/" + createResp.getBody().id(), HttpMethod.PUT, updateRequest,
                         ContentDTO.class);
 
         assertThat(updateResp.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -251,14 +279,14 @@ class ContentControllerTest {
     void deleteContent_asAdmin() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
                 "Lecture 3");
-        HttpHeaders userHeader = jwtHeaders(testUserJwt);
-        HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
+        
+        HttpEntity<MultiValueMap<String, Object>> createRequest = contentCreateEntity(req, testUserJwt);
         ResponseEntity<ContentDTO> createResp = restTemplate
-                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
 
@@ -284,14 +312,13 @@ class ContentControllerTest {
     void reportContent() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
                 "Lecture 4");
-        HttpHeaders userHeader = jwtHeaders(testUserJwt);
-        HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
+        HttpEntity<MultiValueMap<String, Object>> createRequest = contentCreateEntity(req, testUserJwt);
         ResponseEntity<ContentDTO> createResp = restTemplate
-                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
 
@@ -312,14 +339,13 @@ class ContentControllerTest {
     void markContentAsOutdated() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
                 "Lecture 5");
-        HttpHeaders userHeader = jwtHeaders(testUserJwt);
-        HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
+        HttpEntity<MultiValueMap<String, Object>> createRequest = contentCreateEntity(req, testUserJwt);
         ResponseEntity<ContentDTO> createResp = restTemplate
-                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
         assertThat(createResp.getBody().id()).isNotNull();
@@ -340,14 +366,13 @@ class ContentControllerTest {
     void updateContent_notOwnerForbidden() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
                 "Lecture 6");
-        HttpHeaders userHeader = jwtHeaders(testUserJwt);
-        HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
+        HttpEntity<MultiValueMap<String, Object>> createRequest = contentCreateEntity(req, testUserJwt);
         ResponseEntity<ContentDTO> createResp = restTemplate
-                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
 
         User otherUser = new User("Other", "User", "other@example.com", "other",
                 passwordEncoder.encode("otherpass"), Role.STUDENT);
@@ -357,9 +382,9 @@ class ContentControllerTest {
 
         ContentUpdateRequest updateReq = new ContentUpdateRequest(
                 ContentCategory.PDF,
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
                 "Lecture 6 Updated");
         HttpEntity<ContentUpdateRequest> entity = new HttpEntity<>(updateReq, jwtHeaders(otherUserJwt));
 
@@ -377,14 +402,13 @@ class ContentControllerTest {
     void deleteContent_notOwnerForbidden() {
         ContentCreateRequest req = new ContentCreateRequest(
                 ContentCategory.PDF,
-                courseAlgo.getId(), 
-                lecturerDoe.getId(), 
-                facultyCS.getId(), 
+                courseAlgo.getId(),
+                lecturerDoe.getId(),
+                facultyCS.getId(),
                 "Lecture 7");
-        HttpHeaders userHeader = jwtHeaders(testUserJwt);
-        HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
+        HttpEntity<MultiValueMap<String, Object>> createRequest = contentCreateEntity(req, testUserJwt);
         ResponseEntity<ContentDTO> createResp = restTemplate
-                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(createResp.getBody()).isNotNull();
         assertThat(createResp.getBody().id()).isNotNull();
@@ -408,16 +432,14 @@ class ContentControllerTest {
     @DisplayName("Should not create content with invalid data")
     void createContent_invalidData() {
         ContentCreateRequest req = new ContentCreateRequest(
-                null, 
-                null, 
-                null, 
-                null, 
-                "" 
-        );
-        HttpHeaders userHeader = jwtHeaders(testUserJwt);
-        HttpEntity<ContentCreateRequest> createRequestEntity = new HttpEntity<>(req, userHeader);
+                null,
+                null,
+                null,
+                null,
+                "");
+        HttpEntity<MultiValueMap<String, Object>> createRequest = contentCreateEntity(req, testUserJwt);
         ResponseEntity<ContentDTO> createResp = restTemplate
-                .exchange(baseUrl, HttpMethod.POST, createRequestEntity, ContentDTO.class);
+                .exchange(baseUrl, HttpMethod.POST, createRequest, ContentDTO.class);
 
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
@@ -431,8 +453,7 @@ class ContentControllerTest {
                 baseUrl + "/browse",
                 HttpMethod.GET,
                 entity,
-                ContentPageResponse.class
-                );
+                ContentPageResponse.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
@@ -607,7 +628,8 @@ class ContentControllerTest {
                 builder.toUriString(),
                 HttpMethod.GET,
                 entity,
-                new ParameterizedTypeReference<ContentPageResponse>() {});
+                new ParameterizedTypeReference<ContentPageResponse>() {
+                });
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         ContentPageResponse pageResponse = response.getBody();
@@ -623,13 +645,14 @@ class ContentControllerTest {
     void browseContents_noResults() {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/browse")
                 .queryParam("facultyId", facultyEng.getId())
-                .queryParam("category", ContentCategory.ZIP.toString()); 
+                .queryParam("category", ContentCategory.ZIP.toString());
         HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
         ResponseEntity<ContentPageResponse> response = restTemplate.exchange(
                 builder.toUriString(),
                 HttpMethod.GET,
                 entity,
-                new ParameterizedTypeReference<ContentPageResponse>() {});
+                new ParameterizedTypeReference<ContentPageResponse>() {
+                });
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         ContentPageResponse pageResponse = response.getBody();

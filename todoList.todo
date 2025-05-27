@@ -28,7 +28,10 @@ TODO Browse feature basically auch für User (für admin seiten)
 TODO Browse feature basically auch für Bewertungen (für admin seiten)
 TODO browse suche für content auch für lecturer, faculty, course anwenden
 TODO Auf mariaDB umsteigen
+TODO doku erstellen
+TODO Testcontainers für unittest verweden
 TODO Minio verwenden für Datei speicherung -> s3 sdk verwenden für kommunikation
+
 
 # CI/CD 
 TODO herausfinden wie man automatisch optionen wie localhost von erlaubten ips entfernt etc.

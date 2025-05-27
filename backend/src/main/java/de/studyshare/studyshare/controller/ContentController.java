@@ -55,13 +55,12 @@ public class ContentController {
         return ResponseEntity.ok(contentService.getContentById(id));
     }
 
-    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}) // Explicitly state it consumes multipart
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}) 
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ContentDTO> createContent(
             @Valid @RequestPart("contentData") ContentCreateRequest createRequest,
-            @RequestPart("file") MultipartFile file) { // Changed @RequestParam to @RequestPart for the file
+            @RequestPart("file") MultipartFile file) { 
 
-        // Your existing call to contentService, which should now be `storeFile`
         ContentDTO createdContent = contentService.createContent(createRequest, file);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
