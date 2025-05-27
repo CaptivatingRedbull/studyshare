@@ -59,6 +59,7 @@ public class TestDataGenerator {
             User user2 = new User("Maria", "Db", "maria.db@hotmail.com",
                     "mariadb", passwordEncoder.encode("adminpass"), Role.ADMIN);
             userRepository.save(user2);
+            System.out.println("Maria DB saved with password: " + passwordEncoder.encode("adminpass"));
 
             testUser = new User("Test", "User", "testuserGenData@example.com", "testuserGenData",
                     passwordEncoder.encode("password"), Role.STUDENT);

@@ -2,63 +2,62 @@ services:
   # Backend Service (Java Spring Boot)
   backend:
     build:
-      context: ./backend # Path to the directory containing the backend Dockerfile
-      dockerfile: Dockerfile # Specifies the Dockerfile to use
+      context: ./backend
+      dockerfile: Dockerfile 
     container_name: studyshare-backend-local
     ports:
-      - "8080:8080" # Maps port 8080 of the host to port 8080 of the container
+      - "8080:8080" 
+      - "5005:5005" # For remote debugging
     environment:
-      # Add any backend-specific environment variables here if needed for local dev
-      # For example, if you had a different profile or database for local:
-      # - SPRING_PROFILES_ACTIVE=local
-      # - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/studyshare_local
-      # - SPRING_DATASOURCE_USERNAME=user
-      # - SPRING_DATASOURCE_PASSWORD=password
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 # For remote debugging
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/studyshare_db
+      - SPRING_DATASOURCE_USERNAME=studyshare_user
+      - SPRING_DATASOURCE_PASSWORD=12EKA-02dD26oC1_2aA)
     volumes:
-      - ./backend/target:/app/target # Optional: if you want to see build artifacts locally without rebuilding image constantly
-      # For live reloading of backend code (more advanced, requires devtools and specific setup):
-      # - ./backend/src:/app/src
+      - ./backend/target:/app/target 
     networks:
-      - studyshare-network # Connects to the custom network
+      - studyshare-network
+
+  # Database Service (MariaDB)
+  mariadb:
+    image: mariadb:10.11 
+    container_name: studyshare-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: K+d36o0tFRn@
+      MARIADB_DATABASE: studyshare_db 
+      MARIADB_USER: studyshare_user 
+      MARIADB_PASSWORD: 12EKA-02dD26oC1_2aA)
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - studyshare-network
 
   # Frontend Service (React Vite)
   frontend:
     build:
-      context: ./frontend # Path to the directory containing the frontend Dockerfile
-      dockerfile: Dockerfile # Specifies the Dockerfile to use
-      # args: # If you need to pass build arguments to the frontend Dockerfile
-      #   VITE_API_URL: http://backend:8080 # Example if API URL is needed at build time
+      context: ./frontend 
+      dockerfile: Dockerfile 
     container_name: studyshare-frontend-local
     ports:
-      - "5173:80" # Maps port 5173 of the host to port 80 of the Nginx container
-    environment:
-      # This VITE_API_URL will be used by the Nginx container if it serves an entrypoint script
-      # that injects it, or if your frontend is built to pick it up from the environment
-      # where Nginx is running (less common for static builds).
-      # More typically, for a static build served by Nginx, VITE_API_URL is baked in at build time.
-      # If your frontend makes calls to the backend using a relative path or a proxy configured in Vite,
-      # this might not be strictly necessary here IF the Nginx reverse proxies correctly.
-      # However, if your frontend code *directly* uses VITE_API_URL at runtime (e.g. in JS after build),
-      # this won't work as expected for a static Nginx setup.
-      # The apiClient.ts uses import.meta.env.VITE_API_URL, which is a build-time variable.
-      # For local development with Docker Compose, you'd typically pass this at build time (see build.args above)
-      # or configure Nginx to proxy requests to the backend.
-      - VITE_API_URL=http://localhost:8080 # This is what the browser on your host will use
-                                          # Nginx will serve files, browser makes API calls.
-                                          # If Nginx needs to proxy, this env var is for the Nginx container itself.
+      - "5173:80"
+    
     depends_on:
-      - backend # Ensures backend starts before frontend (for readiness, not necessarily for networking)
+      - backend 
     volumes:
-      # For live reloading of frontend code (Vite handles this well with file watching)
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
-      # Ensure node_modules is not overwritten by the host mount if it's installed in the container
       - /app/node_modules
     networks:
-      - studyshare-network # Connects to the custom network
+      - studyshare-network 
 
-# Networks Configuration
+
 networks:
   studyshare-network:
-    driver: bridge # Default bridge network driver
+    driver: bridge 
+
+volumes:
+  mariadb_data:
+    driver: local

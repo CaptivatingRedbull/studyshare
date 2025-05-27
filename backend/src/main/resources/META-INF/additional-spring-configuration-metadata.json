@@ -1,0 +1,17 @@
+{"properties": [
+  {
+    "name": "file.upload-dir",
+    "type": "java.lang.String",
+    "description": "Location where uploaded files are stored."
+  },
+  {
+    "name": "jwt.expiration.ms",
+    "type": "java.lang.String",
+    "description": "JWT token expiration time in milliseconds."
+  },
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "Secret key used for signing JWT tokens."
+  }
+]}

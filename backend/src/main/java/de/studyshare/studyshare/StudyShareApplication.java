@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 
+import de.studyshare.studyshare.domain.Role;
+import de.studyshare.studyshare.domain.User;
 import de.studyshare.studyshare.repository.UserRepository;
 
 /**
@@ -32,7 +34,11 @@ public class StudyShareApplication {
     @Bean
     public CommandLineRunner commandLineRunner(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            // Initialization logic if needed
+            User adminUser = new User("Admin", "User", "adminGenData@example.com", "adminGenData",
+                    passwordEncoder.encode("adminpass"),
+                    Role.ADMIN);
+            userRepository.save(adminUser);
+            System.out.println("Admin User saved with password: " + adminUser.getPasswordHash());
         };
     }
 }

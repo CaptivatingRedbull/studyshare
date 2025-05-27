@@ -9,6 +9,14 @@
             "projectName": "studyshare",
             "args": "--spring.profiles.active=dev",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Debug Remote Backend (Docker)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005,
+            "projectName": "studyshare" 
         }
     ]
 }

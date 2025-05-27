@@ -89,9 +89,8 @@ export function BrowsePage() {
     const [sortBy, setSortBy] = useState<"uploadDate" | "title" | "rating">("uploadDate");
     const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
     const [currentPage, setCurrentPage] = useState(0);
-    const [pageSize, setPageSize] = useState(12);
+    const [pageSize] = useState(12);
     const [contents, setContents] = useState<Content[]>([]);
-    const [totalElements, setTotalElements] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(true);
     const [faculties, setFaculties] = useState<Faculty[]>([]);
@@ -117,7 +116,6 @@ export function BrowsePage() {
                 sortBy, sortDirection, currentPage, pageSize
             );
             setContents(result.content);
-            setTotalElements(result.totalElements);
             setTotalPages(result.totalPages);
             setCurrentPage(result.currentPage);
         } catch (error) {
