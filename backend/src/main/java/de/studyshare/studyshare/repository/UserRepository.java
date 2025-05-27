@@ -3,6 +3,7 @@ package de.studyshare.studyshare.repository;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import de.studyshare.studyshare.domain.User;
 
@@ -10,7 +11,7 @@ import de.studyshare.studyshare.domain.User;
  * Repository interface for managing User entities.
  * Provides methods to perform CRUD operations and custom queries on User data.
  */
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
     /**
      * Finds a User by their username.

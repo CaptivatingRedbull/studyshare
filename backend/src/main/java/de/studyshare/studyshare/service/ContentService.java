@@ -30,7 +30,7 @@ import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.domain.Course;
 import de.studyshare.studyshare.domain.Faculty;
 import de.studyshare.studyshare.domain.Lecturer;
-import de.studyshare.studyshare.domain.SortByOptions;
+import de.studyshare.studyshare.domain.ContentSortByOptions;
 import de.studyshare.studyshare.domain.User;
 import de.studyshare.studyshare.dto.entity.ContentDTO;
 import de.studyshare.studyshare.dto.request.ContentCreateRequest;
@@ -334,7 +334,7 @@ public class ContentService {
             Long lecturerId,
             ContentCategory category,
             String searchTerm,
-            SortByOptions sortBy,
+            ContentSortByOptions sortBy,
             String sortDirection,
             Pageable pageable) {
 

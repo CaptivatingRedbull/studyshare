@@ -23,7 +23,6 @@ TODO User Verwalten
 TODO Kursstruktur verwalten
 
 # Backend
-TODO Browse feature basically auch für User (für admin seiten)
 TODO Browse feature basically auch für Bewertungen (für admin seiten)
 TODO browse suche für content auch für lecturer, faculty, course anwenden
 TODO Auf mariaDB umsteigen

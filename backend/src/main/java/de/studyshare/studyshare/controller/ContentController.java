@@ -26,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import de.studyshare.studyshare.domain.ContentCategory;
-import de.studyshare.studyshare.domain.SortByOptions;
+import de.studyshare.studyshare.domain.ContentSortByOptions;
 import de.studyshare.studyshare.dto.entity.ContentDTO;
 import de.studyshare.studyshare.dto.request.ContentCreateRequest;
 import de.studyshare.studyshare.dto.request.ContentUpdateRequest;
@@ -108,7 +108,7 @@ public class ContentController {
             @RequestParam(required = false) Long lecturerId,
             @RequestParam(required = false) ContentCategory category,
             @RequestParam(required = false) String searchTerm,
-            @RequestParam(required = false, defaultValue = "uploadDate") SortByOptions sortBy,
+            @RequestParam(required = false, defaultValue = "uploadDate") ContentSortByOptions sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortDirection,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "20") int size) {

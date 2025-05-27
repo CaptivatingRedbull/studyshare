@@ -4,9 +4,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.context.annotation.Lazy; // Import @Lazy
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import de.studyshare.studyshare.domain.Role;
 import de.studyshare.studyshare.domain.User;
 import de.studyshare.studyshare.dto.entity.UserDTO;
 import de.studyshare.studyshare.dto.request.UserCreateRequest;
@@ -188,5 +194,43 @@ public class UserService {
     public User getInternalUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    }
+
+    /**
+     * Retrieves a paginated and sorted list of users based on various filtering
+     * criteria.
+     *
+     * @param username      the username to filter by (optional)
+     * @param email         the email to filter by (optional)
+     * @param firstName     the first name to filter by (optional)
+     * @param lastName      the last name to filter by (optional)
+     * @param role          the role to filter by (optional)
+     * @param sortBy        the field to sort by
+     * @param sortDirection the direction of sorting (ASC or DESC)
+     * @param pageable      pagination information
+     * @return a Page of UserDTO objects representing the filtered and sorted users
+     */
+    @Transactional
+    public Page<UserDTO> getFilteredAndSortedUsers(
+            String username,
+            String email,
+            String firstName,
+            String lastName,
+            Role role,
+            String sortDirection,
+            Pageable pageable) {
+
+        Specification<User> spec = UserSpecifications.filterBy(
+                username, email, firstName, lastName, role);
+
+        Sort sort = Sort.by(Sort.Direction.ASC, "username");
+
+        PageRequest pageRequest = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                sort);
+
+        Page<User> userPage = userRepository.findAll(spec, pageRequest);
+        return userPage.map(UserDTO::fromEntity);
     }
 }
