@@ -23,9 +23,7 @@ TODO User Verwalten
 TODO Kursstruktur verwalten
 
 # Backend
-TODO Auf mariaDB umsteigen
 TODO Testcontainers für unittest verweden
-TODO Minio verwenden für Datei speicherung -> s3 sdk verwenden für kommunikation
 TODO Tests für logout -> token invalidation
 
 # CI/CD 

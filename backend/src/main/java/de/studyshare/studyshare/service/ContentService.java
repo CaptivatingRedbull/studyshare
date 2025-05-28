@@ -1,11 +1,7 @@
 package de.studyshare.studyshare.service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -14,7 +10,6 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -25,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.amazonaws.services.neptunedata.model.S3Exception;
 import de.studyshare.studyshare.domain.Content;
 import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.domain.Course;
@@ -42,7 +38,6 @@ import de.studyshare.studyshare.repository.CourseRepository;
 import de.studyshare.studyshare.repository.FacultyRepository;
 import de.studyshare.studyshare.repository.LecturerRepository;
 import de.studyshare.studyshare.repository.UserRepository;
-import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 
 /**
@@ -53,16 +48,16 @@ import jakarta.transaction.Transactional;
 @Service
 public class ContentService {
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    private Path rootLocation;
-
     private final ContentRepository contentRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final FacultyRepository facultyRepository;
     private final LecturerRepository lecturerRepository;
+    private final AwsService awsService;
+
+    // S3/MinIO Bucket name from application properties
+    @Value("${s3.bucket-name}")
+    private String s3BucketName;
 
     /**
      * Constructs a ContentService with the specified repositories.
@@ -77,26 +72,14 @@ public class ContentService {
             UserRepository userRepository,
             CourseRepository courseRepository,
             FacultyRepository facultyRepository,
-            LecturerRepository lecturerRepository) {
+            LecturerRepository lecturerRepository,
+            AwsService awsService) {
         this.contentRepository = contentRepository;
         this.userRepository = userRepository;
         this.courseRepository = courseRepository;
         this.facultyRepository = facultyRepository;
         this.lecturerRepository = lecturerRepository;
-    }
-
-    /**
-     * Initializes the storage location for uploaded files.
-     * Creates the directory if it does not exist.
-     */
-    @PostConstruct // Initialize after dependency injection
-    public void init() {
-        try {
-            rootLocation = Paths.get(uploadDir);
-            Files.createDirectories(rootLocation);
-        } catch (IOException e) {
-            throw new RuntimeException("Could not initialize storage location", e);
-        }
+        this.awsService = awsService;
     }
 
     /**
@@ -138,8 +121,12 @@ public class ContentService {
      *                                   exist
      */
     @Transactional
-    public ContentDTO createContent(ContentCreateRequest createRequest, MultipartFile file) {
+    public ContentDTO createContent(
+            ContentCreateRequest createRequest,
+            MultipartFile file) {
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         String currentUsername = authentication.getName();
         User uploadedByUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username",
@@ -149,8 +136,8 @@ public class ContentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", createRequest.courseId()));
         Faculty faculty = facultyRepository.findById(createRequest.facultyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", createRequest.facultyId()));
-
-        Lecturer lecturer = null;
+        Lecturer lecturer = lecturerRepository.findById(createRequest.lecturerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", createRequest.lecturerId()));
 
         if (!course.getFaculty().getId().equals(faculty.getId())) {
             throw new BadRequestException("The specified course (ID: " + course.getId()
@@ -161,21 +148,27 @@ public class ContentService {
         if (originalFilenameRaw == null) {
             throw new BadRequestException("Uploaded file must have a filename.");
         }
-        String originalFilename = StringUtils.cleanPath(originalFilenameRaw);
-        String uniqueFilename = UUID.randomUUID().toString() + "_" + originalFilename;
 
-        try {
-            if (file.isEmpty()) {
-                throw new BadRequestException("Failed to store empty file.");
-            }
-            Path destinationFile = this.rootLocation.resolve(
-                    Paths.get(uniqueFilename))
-                    .normalize().toAbsolutePath();
-            Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to store file.", e);
+        if (file.isEmpty()) {
+            throw new BadRequestException("Uploaded file must not be empty.");
         }
 
+        if (file.getSize() > 10 * 1024 * 1024) { // 10 MB limit
+            throw new BadRequestException("Uploaded file must not exceed 10 MB.");
+        }
+
+        String originalFilename = StringUtils.cleanPath(originalFilenameRaw);
+        String uniqueObjectNameInS3 = UUID.randomUUID().toString() + "_" + originalFilename;
+
+        try {
+            awsService.uploadFile(
+                    s3BucketName,
+                    uniqueObjectNameInS3,
+                    file.getSize(),
+                    file.getInputStream());
+        } catch (IOException e) {
+            throw new BadRequestException("Error uploading file to S3: " + e.getMessage());
+        }
         Content content = new Content();
         content.setUploadedBy(uploadedByUser);
         content.setUploadDate(LocalDate.now());
@@ -184,7 +177,7 @@ public class ContentService {
         content.setFaculty(faculty);
         content.setLecturer(lecturer);
         content.setTitle(createRequest.title());
-        content.setFilePath(uniqueFilename);
+        content.setFilePath(uniqueObjectNameInS3);
 
         Content savedContent = contentRepository.save(content);
         return ContentDTO.fromEntity(savedContent);
@@ -238,7 +231,7 @@ public class ContentService {
     }
 
     /**
-     * Deletes content by its ID.
+     * Deletes content by its ID, including the associated file in S3.
      *
      * @param id the ID of the content to delete
      * @throws ResourceNotFoundException if the content with the specified ID does
@@ -249,8 +242,16 @@ public class ContentService {
         Content content = contentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Content", "id", id));
 
+        String objectKeyInS3 = content.getFilePath();
+        if (objectKeyInS3 != null && !objectKeyInS3.isEmpty()) {
+            try {
+                awsService.deleteFile(s3BucketName, objectKeyInS3);
+            } catch (S3Exception e) {
+                System.err.println(
+                        "Error deleting file from S3 '" + objectKeyInS3 + "': " + e);
+            }
+        }
         contentRepository.delete(content);
-
     }
 
     /**
@@ -357,24 +358,23 @@ public class ContentService {
     }
 
     /**
-     * Loads a file as a resource based on its filename.
+     * Loads a file from S3 as a Resource.
      *
-     * @param filename the name of the file to load
-     * @return the Resource representing the file
-     * @throws ResourceNotFoundException if the file does not exist or is not
-     *                                   readable
+     * @param objectKeyInS3 the key of the object in S3
+     * @return a Resource representing the file
+     * @throws ResourceNotFoundException if the file does not exist in S3
      */
-    public Resource loadFileAsResource(String filename) {
+    public Resource loadFileAsResource(String objectKeyInS3) {
         try {
-            Path filePath = this.rootLocation.resolve(filename).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
-            if (resource.exists() || resource.isReadable()) {
-                return resource;
-            } else {
-                throw new ResourceNotFoundException("File not found " + filename);
-            }
-        } catch (MalformedURLException ex) {
-            throw new ResourceNotFoundException("File not found " + filename + ": " + ex);
+            ByteArrayOutputStream s3Object = awsService.downloadFile(s3BucketName, objectKeyInS3);
+            return new org.springframework.core.io.ByteArrayResource(
+                    s3Object.toByteArray());
+        } catch (S3Exception e) {
+            throw new RuntimeException(
+                    "S3 error while downloading file '" + objectKeyInS3 + "': " + e);
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Error while converting S3 object to Resource for file '" + objectKeyInS3 + "': " + e);
         }
     }
 }
