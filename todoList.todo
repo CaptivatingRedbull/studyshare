@@ -24,7 +24,7 @@ TODO Kursstruktur verwalten
 
 # Backend
 TODO Tests für logout -> token invalidation
-TODO migrate to aws sdk v2 
+TODO umlaute sonderzeichen bei Titel verhalten betrachten und übergabe an dateinamen anschauen
 
 # CI/CD 
 TODO herausfinden wie man automatisch optionen wie localhost von erlaubten ips entfernt etc.

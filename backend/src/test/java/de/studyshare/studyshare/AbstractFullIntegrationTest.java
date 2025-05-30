@@ -4,26 +4,16 @@ import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-// Potentially import S3 client for bucket creation
-// import com.amazonaws.auth.AWSStaticCredentialsProvider;
-// import com.amazonaws.auth.BasicAWSCredentials;
-// import com.amazonaws.client.builder.AwsClientBuilder;
-// import com.amazonaws.services.s3.AmazonS3;
-// import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-// import org.junit.jupiter.api.BeforeAll;
 
 
-@Testcontainers // This might be redundant if inheriting from a @Testcontainers base class
-public abstract class AbstractFullIntegrationTest extends AbstractDatabaseIntegrationTest { // Inherits MariaDB
+@Testcontainers 
+public abstract class AbstractFullIntegrationTest extends AbstractDatabaseIntegrationTest { 
 
     @SuppressWarnings("resource")
     @Container
@@ -33,8 +23,6 @@ public abstract class AbstractFullIntegrationTest extends AbstractDatabaseIntegr
 
     @DynamicPropertySource
     static void overrideMinioProperties(DynamicPropertyRegistry registry) {
-        // MariaDB properties are already handled by the parent class's @DynamicPropertySource
-
         // Minio (S3) properties
         registry.add("s3.endpoint", () -> "http://" + minioContainer.getHost() + ":" + minioContainer.getMappedPort(9000));
         registry.add("s3.access-key", minioContainer::getUserName);
@@ -46,24 +34,32 @@ public abstract class AbstractFullIntegrationTest extends AbstractDatabaseIntegr
     @BeforeAll
     static void setupMinio() {
         try {
-            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                    .withEndpointConfiguration(
-                            new AwsClientBuilder.EndpointConfiguration(
-                                    "http://" + minioContainer.getHost() + ":" + minioContainer.getMappedPort(9000),
-                                    "us-east-1"
+            S3Client s3Client = S3Client.builder()
+                    .endpointOverride(java.net.URI.create("http://" + minioContainer.getHost() + ":" + minioContainer.getMappedPort(9000)))
+                    .region(software.amazon.awssdk.regions.Region.US_EAST_1)
+                    .credentialsProvider(
+                        software.amazon.awssdk.auth.credentials.StaticCredentialsProvider.create(
+                            software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create(
+                                minioContainer.getUserName(),
+                                minioContainer.getPassword()
                             )
+                        )
                     )
-                    .withCredentials(new AWSStaticCredentialsProvider(
-                            new BasicAWSCredentials(minioContainer.getUserName(), minioContainer.getPassword()))
-                    )
-                    .withPathStyleAccessEnabled(true)
+                    .forcePathStyle(true)
                     .build();
 
             String testBucketName = "studyshare-uploads-test";
-            if (!s3Client.doesBucketExistV2(testBucketName)) {
-                s3Client.createBucket(testBucketName);
+
+            boolean bucketExists = s3Client.listBuckets().buckets().stream()
+                .anyMatch(b -> b.name().equals(testBucketName));
+
+            if (bucketExists) {
+                System.out.println("Minio Test bucket already exists: " + testBucketName);
+            } else {
+                s3Client.createBucket(CreateBucketRequest.builder().bucket(testBucketName).build());
                 System.out.println("Minio Test bucket created: " + testBucketName);
             }
+            
         } catch (Exception e) {
             System.err.println("Failed to create Minio test bucket: " + e.getMessage());
         }
