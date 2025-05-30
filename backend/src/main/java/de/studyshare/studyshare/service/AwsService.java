@@ -6,10 +6,9 @@ import java.io.InputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+
 
 /**
  * Service for handling AWS S3 operations.
@@ -17,7 +16,7 @@ import com.amazonaws.services.s3.model.S3Object;
 @Service
 public class AwsService {
     @Autowired
-    private AmazonS3 s3Client;
+    private S3Client s3Client;
 
     /**
      * Uploads a file to an S3 bucket.
@@ -31,9 +30,11 @@ public class AwsService {
             String keyName,
             long fileSize,
             InputStream inputStream) {
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(fileSize);
-        s3Client.putObject(bucketName, keyName, inputStream, metadata);
+        s3Client.putObject(builder -> builder
+                .bucket(bucketName)
+                .key(keyName)
+                .build(),
+            software.amazon.awssdk.core.sync.RequestBody.fromInputStream(inputStream, fileSize));
     }
 
     /**
@@ -44,8 +45,13 @@ public class AwsService {
      */
     public void deleteFile(
             final String bucketName,
-            final String keyName) throws AmazonClientException {
-        s3Client.deleteObject(bucketName, keyName);
+            final String keyName) throws S3Exception {
+        s3Client.deleteObject(
+            software.amazon.awssdk.services.s3.model.DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(keyName)
+                .build()
+        );
     }
 
     /**
@@ -56,16 +62,15 @@ public class AwsService {
      */
     public ByteArrayOutputStream downloadFile(
             final String bucketName,
-            final String keyName) throws IOException, AmazonClientException {
-        S3Object s3Object = s3Client.getObject(bucketName, keyName);
-        InputStream inputStream = s3Object.getObjectContent();
+            final String keyName) throws IOException, S3Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        int len;
-        byte[] buffer = new byte[4096];
-        while ((len = inputStream.read(buffer, 0, buffer.length)) != -1) {
-            outputStream.write(buffer, 0, len);
-        }
+        s3Client.getObject(
+            software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(keyName)
+                .build(),
+            software.amazon.awssdk.core.sync.ResponseTransformer.toOutputStream(outputStream)
+        );
         return outputStream;
     }
 }

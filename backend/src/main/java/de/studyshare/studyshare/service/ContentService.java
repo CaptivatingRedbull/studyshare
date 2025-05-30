@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.amazonaws.services.neptunedata.model.S3Exception;
 import de.studyshare.studyshare.domain.Content;
 import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.domain.Course;
@@ -39,6 +38,7 @@ import de.studyshare.studyshare.repository.FacultyRepository;
 import de.studyshare.studyshare.repository.LecturerRepository;
 import de.studyshare.studyshare.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
  * Service class for managing content-related operations.
