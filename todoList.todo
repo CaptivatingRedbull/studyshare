@@ -31,19 +31,29 @@ TODO herausfinden wie man automatisch optionen wie localhost von erlaubten ips e
 TODO gitlab cicd updaten
 
 #Präsentation
-TODO Serverside token invalidation (maybe)
-
 Themen:
     - (frontend)
     - Backend
-        - Grundstruktur:
+        - Grundstruktur (einzelne komponenten):
             - Backend selbst
             - Maria DB 
             - MinIO 
                 -> skalierbar
                 -> s3 sdk kompatibel -> leichter switchen bei theoretischem produktivgang
+
+            - frontend
+            - (monitoring software (loganalyser))
+        - Datenbankanbindung -> plugin von mariadb? 
+        - Endpoints:
+            - maybe ne map oder so erstellen
+        - Testcases vorstellen:
+            - was mit file upload -> interessanter
+            - was mit pageable -> filer -> interessanter
         - File upload
         - pageable
         - token invalidation
-        - 
     - CI/CD
+
+Morgen:
+    - CI/CD
+    - Präsentation machen
