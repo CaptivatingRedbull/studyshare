@@ -4,6 +4,7 @@ import de.studyshare.studyshare.domain.BlocklistedToken;
 import de.studyshare.studyshare.repository.BlocklistedTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,9 @@ public class TokenBlocklistService {
     private static final Logger logger = LoggerFactory.getLogger(TokenBlocklistService.class);
     private final BlocklistedTokenRepository blocklistedTokenRepository;
     private final JwtUtil jwtUtil; // To extract expiry date
+    
+    @Value("${spring.profiles.active:}")
+    private String activeProfiles;
 
     /**
      * Constructor for TokenBlocklistService.
@@ -84,11 +88,17 @@ public class TokenBlocklistService {
 
     /**
      * Periodically cleans up expired tokens from the blocklist.
-     * Runs every hour.
+     * Runs every hour in production, but skips execution during tests.
      */
     @Scheduled(fixedRate = 3600000) // 3600000 ms = 1 hour
     @Transactional
     public void cleanupExpiredTokens() {
+        // Skip cleanup during tests to prevent database connection issues
+        if (activeProfiles != null && (activeProfiles.contains("test") || activeProfiles.contains("junit"))) {
+            logger.debug("Skipping scheduled cleanup during test execution (active profiles: {})", activeProfiles);
+            return;
+        }
+        
         Instant now = Instant.now();
         logger.info("Running scheduled cleanup of expired blocklisted tokens before: {}", now);
         long count = blocklistedTokenRepository.deleteByExpiryDateBefore(now);

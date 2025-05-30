@@ -28,6 +28,7 @@ services:
       MARIADB_DATABASE: studyshare_db 
       MARIADB_USER: studyshare_user 
       MARIADB_PASSWORD: 12EKA-02dD26oC1_2aA)
+    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     volumes:
       - mariadb_data:/var/lib/mysql
     ports:

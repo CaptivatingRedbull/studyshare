@@ -83,6 +83,7 @@ public class Content {
     /**
      * Path to the uploaded file in the storage system.
      */
+    @Column(columnDefinition = "VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin")
     private String filePath;
 
     /**

@@ -66,6 +66,7 @@ public class User {
      */
     @NotBlank(message = "Username cannot be blank")
     @Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")
+    @Column(columnDefinition = "VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin")
     private String username;
 
     /**
@@ -102,7 +103,7 @@ public class User {
     public User(String firstName, String lastName, String email, String username, String passwordHash, Role role) {
         this.firstName = firstName;
         this.lastName = lastName;
-        this.email = email;
+        this.email = email.toLowerCase();
         this.username = username;
         this.passwordHash = passwordHash;
         this.role = role;
@@ -168,7 +169,7 @@ public class User {
      * @param email The email address to set
      */
     public void setEmail(String email) {
-        this.email = email;
+        this.email = email.toLowerCase();
     }
 
     /**

@@ -19,6 +19,7 @@ import de.studyshare.studyshare.dto.request.LoginRequest;
 import de.studyshare.studyshare.dto.request.RegisterRequest;
 import de.studyshare.studyshare.dto.request.UserCreateRequest;
 import de.studyshare.studyshare.dto.response.LoginResponse;
+import de.studyshare.studyshare.exception.GlobalExceptionHandler.ErrorDetails; // Import ErrorDetails
 import de.studyshare.studyshare.service.JwtUtil;
 import de.studyshare.studyshare.service.TokenBlocklistService;
 import de.studyshare.studyshare.service.UserService;
@@ -26,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Date; // Import Date
 
 /**
  * Controller for handling authentication-related requests such as login,
@@ -67,10 +69,13 @@ public class AuthController {
      * If successful, generates a JWT token and returns it along with the username.
      * 
      * @param loginRequest The request containing user login details.
-     * @return ResponseEntity with the generated JWT token and username.
+     * 
+     * @param httpRequest  The HTTP request.
+     * @return ResponseEntity with the generated JWT token and username or error
+     *         details.
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest httpRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password()));
@@ -82,11 +87,14 @@ public class AuthController {
 
         } catch (BadCredentialsException e) {
             logger.warn("Login attempt failed for user {}: Invalid credentials", loginRequest.username());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: Invalid username or password!");
+            ErrorDetails errorDetails = new ErrorDetails(new Date(), "Invalid username or password!",
+                    httpRequest.getRequestURI());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorDetails);
         } catch (AuthenticationException e) {
             logger.error("Authentication failed for user {}: {}", loginRequest.username(), e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: Authentication failed! " + e.getMessage());
+            ErrorDetails errorDetails = new ErrorDetails(new Date(), "Authentication failed: " + e.getMessage(),
+                    httpRequest.getRequestURI());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDetails);
         }
     }
 
@@ -96,18 +104,26 @@ public class AuthController {
      * Automatically logs in the user after successful registration.
      * 
      * @param registerRequest The request containing user registration details.
-     * @return ResponseEntity with the created user's login token and username.
+     * 
+     * @param httpRequest     The HTTP request.
+     * @return ResponseEntity with the created user's login token and username or
+     *         error details.
      */
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest,
+            HttpServletRequest httpRequest) {
 
         if (userService.existsByUsername(registerRequest.username())) {
             logger.warn("Registration attempt failed: Username {} is already taken.", registerRequest.username());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Username is already taken!");
+            ErrorDetails errorDetails = new ErrorDetails(new Date(), "Username is already taken!",
+                    httpRequest.getRequestURI());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
         }
         if (userService.existsByEmail(registerRequest.email())) {
             logger.warn("Registration attempt failed: Email {} is already in use.", registerRequest.email());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Email is already in use!");
+            ErrorDetails errorDetails = new ErrorDetails(new Date(), "Email is already in use!",
+                    httpRequest.getRequestURI());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
         }
 
         UserCreateRequest userCreateRequest = new UserCreateRequest(
@@ -122,7 +138,6 @@ public class AuthController {
         UserDTO registeredUser = userService.createUser(userCreateRequest);
         logger.info("User {} registered successfully.", registeredUser.username());
 
-        // Automatically log in the user after registration
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(userCreateRequest.username(), userCreateRequest.password()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -138,8 +153,10 @@ public class AuthController {
      * Handles user logout by blocklisting the JWT token.
      * The token's JTI is extracted and added to the blocklist.
      * 
-     * @param request The HTTP request containing the JWT token in the Authorization
+     * @param request The HTTP request containing the JWT token in the
+     *                Authorization
      *                header.
+     * 
      * @return ResponseEntity indicating success or failure of the logout operation.
      */
     @PostMapping("/logout")
@@ -153,24 +170,34 @@ public class AuthController {
 
         if (jwt != null) {
             try {
-                if (jwtUtil.validateToken(jwt)) { // Validate before blocklisting
+                if (jwtUtil.validateToken(jwt)) {
                     String username = jwtUtil.extractUsername(jwt);
-                    tokenBlocklistService.addToBlocklist(jwt); // Service now handles JTI extraction
-                    SecurityContextHolder.clearContext(); // Clear security context
+                    tokenBlocklistService.addToBlocklist(jwt);
+                    SecurityContextHolder.clearContext();
                     logger.info("User {} logged out successfully. Token JTI blocklisted.", username);
-                    return ResponseEntity.ok("Successfully logged out.");
+                    // Success can still return a JSON body if preferred, or a simple success
+                    // message
+                    ErrorDetails successDetails = new ErrorDetails(new Date(), "Successfully logged out.",
+                            request.getRequestURI());
+                    return ResponseEntity.ok(successDetails);
                 } else {
                     logger.warn("Logout attempt with an invalid or expired token.");
+                    ErrorDetails errorDetails = new ErrorDetails(new Date(),
+                            "Invalid or expired token provided for logout.", request.getRequestURI());
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body("Invalid or expired token provided for logout.");
+                            .body(errorDetails);
                 }
             } catch (Exception e) {
                 logger.error("Error during logout process: {}", e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during logout.");
+                ErrorDetails errorDetails = new ErrorDetails(new Date(), "Error during logout: " + e.getMessage(),
+                        request.getRequestURI());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDetails);
             }
         }
         logger.warn("Logout attempt failed: No token provided or invalid format.");
+        ErrorDetails errorDetails = new ErrorDetails(new Date(), "Logout failed. No token provided or invalid format.",
+                request.getRequestURI());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Logout failed. No token provided or invalid format.");
+                .body(errorDetails);
     }
 }

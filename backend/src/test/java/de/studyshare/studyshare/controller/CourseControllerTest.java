@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 
+import de.studyshare.studyshare.AbstractDatabaseIntegrationTest;
 import de.studyshare.studyshare.domain.Course;
 import de.studyshare.studyshare.domain.Faculty;
 import de.studyshare.studyshare.domain.Lecturer;
@@ -34,10 +35,11 @@ import de.studyshare.studyshare.repository.LecturerRepository;
 import de.studyshare.studyshare.repository.UserRepository;
 import de.studyshare.studyshare.service.JpaUserDetailsService;
 import de.studyshare.studyshare.service.JwtUtil;
+import jakarta.transaction.Transactional;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-class CourseControllerTest {
+class CourseControllerTest extends AbstractDatabaseIntegrationTest {
 
     @LocalServerPort
     private int port;
@@ -78,14 +80,17 @@ class CourseControllerTest {
     private String testUserJwt;
 
     @BeforeEach
-    void setUp() {
+    @Transactional
+    void setUp2() {
         baseUrl = "http://localhost:" + port + "/api/courses";
 
-        adminUser = new User("Admin", "User", "admin@example.com", "admin", passwordEncoder.encode("adminpass"), Role.ADMIN);
+        adminUser = new User("Admin", "User", "admin@example.com", "admin", passwordEncoder.encode("adminpass"),
+                Role.ADMIN);
         userRepository.save(adminUser);
         adminUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(adminUser.getUsername()));
 
-        testUser = new User("Test", "User", "testuser@example.com", "testuser", passwordEncoder.encode("password"), Role.STUDENT);
+        testUser = new User("Test", "User", "testuser@example.com", "testuser", passwordEncoder.encode("password"),
+                Role.STUDENT);
         userRepository.save(testUser);
         testUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(testUser.getUsername()));
 
@@ -126,7 +131,8 @@ class CourseControllerTest {
     @DisplayName("Should get course by ID as authenticated user")
     void getCourseById_authenticated() {
         HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
-        ResponseEntity<CourseDTO> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.GET, entity, CourseDTO.class);
+        ResponseEntity<CourseDTO> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.GET, entity,
+                CourseDTO.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().name()).isEqualTo("Algorithms");
@@ -139,8 +145,7 @@ class CourseControllerTest {
         CourseCreateRequest req = new CourseCreateRequest(
                 "Data Structures",
                 faculty.getId(),
-                Set.of(lecturer.getId())
-        );
+                Set.of(lecturer.getId()));
         HttpEntity<CourseCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(adminUserJwt));
         ResponseEntity<CourseDTO> resp = restTemplate.exchange(baseUrl, HttpMethod.POST, entity, CourseDTO.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -154,8 +159,7 @@ class CourseControllerTest {
         CourseCreateRequest req = new CourseCreateRequest(
                 "Operating Systems",
                 faculty.getId(),
-                Set.of(lecturer.getId())
-        );
+                Set.of(lecturer.getId()));
         HttpEntity<CourseCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<String> resp = restTemplate.exchange(baseUrl, HttpMethod.POST, entity, String.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -168,10 +172,10 @@ class CourseControllerTest {
         CourseUpdateRequest req = new CourseUpdateRequest(
                 "Algorithms Updated",
                 faculty.getId(),
-                Set.of(lecturer.getId())
-        );
+                Set.of(lecturer.getId()));
         HttpEntity<CourseUpdateRequest> entity = new HttpEntity<>(req, jwtHeaders(adminUserJwt));
-        ResponseEntity<CourseDTO> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.PUT, entity, CourseDTO.class);
+        ResponseEntity<CourseDTO> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.PUT, entity,
+                CourseDTO.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().name()).isEqualTo("Algorithms Updated");
@@ -183,10 +187,10 @@ class CourseControllerTest {
         CourseUpdateRequest req = new CourseUpdateRequest(
                 "Algorithms Updated",
                 faculty.getId(),
-                Set.of(lecturer.getId())
-        );
+                Set.of(lecturer.getId()));
         HttpEntity<CourseUpdateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
-        ResponseEntity<String> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.PUT, entity, String.class);
+        ResponseEntity<String> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.PUT, entity,
+                String.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
@@ -194,10 +198,12 @@ class CourseControllerTest {
     @DisplayName("Should delete course as admin")
     void deleteCourse_asAdmin() {
         HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(adminUserJwt));
-        ResponseEntity<Void> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.DELETE, entity, Void.class);
+        ResponseEntity<Void> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.DELETE, entity,
+                Void.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
-        ResponseEntity<String> getResp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.GET, entity, String.class);
+        ResponseEntity<String> getResp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.GET, entity,
+                String.class);
         assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
@@ -205,7 +211,8 @@ class CourseControllerTest {
     @DisplayName("Should not delete course as non-admin")
     void deleteCourse_asNonAdmin_forbidden() {
         HttpEntity<Void> entity = new HttpEntity<>(jwtHeaders(testUserJwt));
-        ResponseEntity<String> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.DELETE, entity, String.class);
+        ResponseEntity<String> resp = restTemplate.exchange(baseUrl + "/" + course.getId(), HttpMethod.DELETE, entity,
+                String.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 

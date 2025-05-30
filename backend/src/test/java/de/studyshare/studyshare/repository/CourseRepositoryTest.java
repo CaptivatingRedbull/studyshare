@@ -15,12 +15,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import de.studyshare.studyshare.AbstractDatabaseIntegrationTest;
 import de.studyshare.studyshare.domain.Course;
 import de.studyshare.studyshare.domain.Faculty;
 import de.studyshare.studyshare.domain.Lecturer;
 
 @DataJpaTest
-public class CourseRepositoryTest {
+public class CourseRepositoryTest extends AbstractDatabaseIntegrationTest{
     
     @Autowired
     private TestEntityManager entityManager;

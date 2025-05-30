@@ -32,6 +32,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import de.studyshare.studyshare.AbstractFullIntegrationTest;
 import de.studyshare.studyshare.domain.Content;
 import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.domain.Course;
@@ -53,7 +54,7 @@ import de.studyshare.studyshare.service.JwtUtil;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-class ContentControllerTest {
+class ContentControllerTest extends AbstractFullIntegrationTest{
     @LocalServerPort
     private int port;
 

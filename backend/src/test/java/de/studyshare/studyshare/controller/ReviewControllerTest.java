@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 
+import de.studyshare.studyshare.AbstractDatabaseIntegrationTest;
 import de.studyshare.studyshare.domain.Content;
 import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.domain.Course;
@@ -38,7 +39,7 @@ import de.studyshare.studyshare.service.JwtUtil;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-class ReviewControllerTest {
+class ReviewControllerTest extends AbstractDatabaseIntegrationTest {
 
     @LocalServerPort
     private int port;
@@ -88,15 +89,18 @@ class ReviewControllerTest {
     void setUp() {
         baseUrl = "http://localhost:" + port + "/api/contents";
 
-        adminUser = new User("Admin", "User", "admin@example.com", "admin", passwordEncoder.encode("adminpass"), Role.ADMIN);
+        adminUser = new User("Admin", "User", "admin@example.com", "admin", passwordEncoder.encode("adminpass"),
+                Role.ADMIN);
         userRepository.save(adminUser);
         adminUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(adminUser.getUsername()));
 
-        testUser = new User("Test", "User", "testuser@example.com", "testuser", passwordEncoder.encode("password"), Role.STUDENT);
+        testUser = new User("Test", "User", "testuser@example.com", "testuser", passwordEncoder.encode("password"),
+                Role.STUDENT);
         userRepository.save(testUser);
         testUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(testUser.getUsername()));
 
-        anotherUser = new User("Another", "User", "another@example.com", "another", passwordEncoder.encode("password2"), Role.STUDENT);
+        anotherUser = new User("Another", "User", "another@example.com", "another", passwordEncoder.encode("password2"),
+                Role.STUDENT);
         userRepository.save(anotherUser);
         anotherUserJwt = jwtUtil.generateToken(jpaUserDetailsService.loadUserByUsername(anotherUser.getUsername()));
 
@@ -134,7 +138,7 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> resp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().stars()).isEqualTo(5);
@@ -159,7 +163,7 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(4, "Self review", "Should not be allowed");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<String> resp = restTemplate.exchange(
-            baseUrl + "/" + ownContent.getId() + "/reviews", HttpMethod.POST, entity, String.class);
+                baseUrl + "/" + ownContent.getId() + "/reviews", HttpMethod.POST, entity, String.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
@@ -169,14 +173,14 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "First", "First review");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> resp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         // Try to create another review for same content by same user
         ReviewCreateRequest req2 = new ReviewCreateRequest(4, "Second", "Second review");
         HttpEntity<ReviewCreateRequest> entity2 = new HttpEntity<>(req2, jwtHeaders(testUserJwt));
         ResponseEntity<String> resp2 = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity2, String.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity2, String.class);
         assertThat(resp2.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
@@ -188,11 +192,11 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
 
         HttpEntity<Void> getEntity = new HttpEntity<>(jwtHeaders(anotherUserJwt));
         ResponseEntity<ReviewDTO[]> resp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.GET, getEntity, ReviewDTO[].class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.GET, getEntity, ReviewDTO[].class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().length).isGreaterThanOrEqualTo(1);
@@ -206,14 +210,14 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> createResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
 
         @SuppressWarnings("null")
         Long reviewId = createResp.getBody().id();
 
         HttpEntity<Void> getEntity = new HttpEntity<>(jwtHeaders(anotherUserJwt));
         ResponseEntity<ReviewDTO> resp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.GET, getEntity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.GET, getEntity, ReviewDTO.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().subject()).isEqualTo("Great content");
@@ -227,7 +231,7 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> createResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
 
         @SuppressWarnings("null")
         Long reviewId = createResp.getBody().id();
@@ -235,7 +239,8 @@ class ReviewControllerTest {
         ReviewUpdateRequest updateReq = new ReviewUpdateRequest(3, "Updated subject", "Updated comment");
         HttpEntity<ReviewUpdateRequest> updateEntity = new HttpEntity<>(updateReq, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> updateResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.PUT, updateEntity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.PUT, updateEntity,
+                ReviewDTO.class);
 
         assertThat(updateResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(updateResp.getBody()).isNotNull();
@@ -251,7 +256,7 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> createResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
 
         @SuppressWarnings("null")
         Long reviewId = createResp.getBody().id();
@@ -259,7 +264,7 @@ class ReviewControllerTest {
         ReviewUpdateRequest updateReq = new ReviewUpdateRequest(2, "Hacked", "Should not work");
         HttpEntity<ReviewUpdateRequest> updateEntity = new HttpEntity<>(updateReq, jwtHeaders(anotherUserJwt));
         ResponseEntity<String> updateResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.PUT, updateEntity, String.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.PUT, updateEntity, String.class);
 
         assertThat(updateResp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
@@ -271,21 +276,21 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> createResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
 
         @SuppressWarnings("null")
         Long reviewId = createResp.getBody().id();
 
         HttpEntity<Void> deleteEntity = new HttpEntity<>(jwtHeaders(testUserJwt));
         ResponseEntity<Void> deleteResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.DELETE, deleteEntity, Void.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.DELETE, deleteEntity, Void.class);
 
         assertThat(deleteResp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
         // Confirm deletion
         HttpEntity<Void> getEntity = new HttpEntity<>(jwtHeaders(testUserJwt));
         ResponseEntity<String> getResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.GET, getEntity, String.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.GET, getEntity, String.class);
         assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
@@ -295,20 +300,20 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> createResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
 
         @SuppressWarnings("null")
         Long reviewId = createResp.getBody().id();
 
         HttpEntity<Void> deleteEntity = new HttpEntity<>(jwtHeaders(adminUserJwt));
         ResponseEntity<Void> deleteResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.DELETE, deleteEntity, Void.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.DELETE, deleteEntity, Void.class);
 
         assertThat(deleteResp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
         HttpEntity<Void> getEntity = new HttpEntity<>(jwtHeaders(testUserJwt));
         ResponseEntity<String> getResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.GET, getEntity, String.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.GET, getEntity, String.class);
         assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
@@ -319,14 +324,15 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> createResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
 
         @SuppressWarnings("null")
         Long reviewId = createResp.getBody().id();
 
         HttpEntity<Void> deleteEntity = new HttpEntity<>(jwtHeaders(anotherUserJwt));
         ResponseEntity<String> deleteResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.DELETE, deleteEntity, String.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.DELETE, deleteEntity,
+                String.class);
 
         assertThat(deleteResp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
@@ -337,7 +343,7 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(null, "", ""); // invalid stars and subject
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> resp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
@@ -348,7 +354,7 @@ class ReviewControllerTest {
         ReviewCreateRequest req = new ReviewCreateRequest(5, "Great content", "Very helpful!");
         HttpEntity<ReviewCreateRequest> entity = new HttpEntity<>(req, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> createResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews", HttpMethod.POST, entity, ReviewDTO.class);
 
         @SuppressWarnings("null")
         Long reviewId = createResp.getBody().id();
@@ -356,7 +362,8 @@ class ReviewControllerTest {
         ReviewUpdateRequest updateReq = new ReviewUpdateRequest(null, "", ""); // invalid stars and subject
         HttpEntity<ReviewUpdateRequest> updateEntity = new HttpEntity<>(updateReq, jwtHeaders(testUserJwt));
         ResponseEntity<ReviewDTO> updateResp = restTemplate.exchange(
-            baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.PUT, updateEntity, ReviewDTO.class);
+                baseUrl + "/" + content.getId() + "/reviews/" + reviewId, HttpMethod.PUT, updateEntity,
+                ReviewDTO.class);
 
         assertThat(updateResp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }

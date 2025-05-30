@@ -34,8 +34,8 @@ public class BlocklistedToken {
      * This should be unique.
      */
     @NotBlank(message = "JTI cannot be blank")
-    @Column(nullable = false, unique = true, length = 100) // Adjusted length for JTI
-    private String jti;
+    @Column(nullable = false, unique = true, length = 100, columnDefinition = "VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin")
+    private String jti; 
 
     /**
      * The original expiry date of the JWT.

@@ -16,13 +16,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 
+import de.studyshare.studyshare.AbstractDatabaseIntegrationTest;
 import de.studyshare.studyshare.dto.request.LoginRequest;
 import de.studyshare.studyshare.dto.request.RegisterRequest;
 import de.studyshare.studyshare.dto.response.LoginResponse;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.profiles.active=test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-class AuthControllerTest {
+class AuthControllerTest extends AbstractDatabaseIntegrationTest{
 
     @LocalServerPort
     private int port;
