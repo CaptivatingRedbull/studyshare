@@ -41,7 +41,7 @@ Themen:
             - Maria DB 
             - MinIO 
                 -> skalierbar
-                -> s3 sdk kompatibel -> leichter switch ww
+                -> s3 sdk kompatibel -> leichter switchen bei theoretischem produktivgang
         - File upload
         - pageable
         - token invalidation

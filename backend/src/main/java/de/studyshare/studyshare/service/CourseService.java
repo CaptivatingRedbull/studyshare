@@ -86,6 +86,7 @@ public class CourseService {
      */
     @Transactional
     public CourseDTO createCourse(CourseCreateRequest createRequest) {
+        //Safety checks
         Faculty faculty = facultyRepository.findById(createRequest.facultyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", createRequest.facultyId()));
 
@@ -98,6 +99,7 @@ public class CourseService {
         course.setName(createRequest.name());
         course.setFaculty(faculty);
 
+        //adding lecturers to the course (if they are defined in the request)
         if (createRequest.lecturerIds() != null && !createRequest.lecturerIds().isEmpty()) {
             Set<Lecturer> lecturers = new HashSet<>(lecturerRepository.findAllById(createRequest.lecturerIds()));
             if (lecturers.size() != createRequest.lecturerIds().size()) {
@@ -124,16 +126,14 @@ public class CourseService {
      */
     @Transactional
     public CourseDTO updateCourse(Long id, CourseUpdateRequest updateRequest) {
+        //Safety checks
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", id));
 
+        //setting the Name
         if (updateRequest.name() != null) {
-
-            Faculty facultyToCheck = (updateRequest.facultyId() != null)
-                    ? facultyRepository.findById(updateRequest.facultyId())
-                            .orElseThrow(
-                                    () -> new ResourceNotFoundException("Faculty", "id", updateRequest.facultyId()))
-                    : course.getFaculty();
+            Faculty facultyToCheck = facultyRepository.findById(updateRequest.facultyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", updateRequest.facultyId()));
 
             if (!course.getName().equals(updateRequest.name()) || (updateRequest.facultyId() != null
                     && !course.getFaculty().getId().equals(updateRequest.facultyId()))) {
@@ -145,12 +145,14 @@ public class CourseService {
             course.setName(updateRequest.name());
         }
 
+        //setting the Faculty
         if (updateRequest.facultyId() != null && !course.getFaculty().getId().equals(updateRequest.facultyId())) {
             Faculty newFaculty = facultyRepository.findById(updateRequest.facultyId())
                     .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", updateRequest.facultyId()));
             course.setFaculty(newFaculty);
         }
 
+        //setting the Lecturers
         if (updateRequest.lecturerIds() != null) {
             Set<Lecturer> newLecturers = new HashSet<>();
             if (!updateRequest.lecturerIds().isEmpty()) {
@@ -207,6 +209,7 @@ public class CourseService {
      */
     @Transactional
     public CourseDTO addLecturerToCourse(Long courseId, Long lecturerId) {
+        //Safety checks
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", courseId));
         Lecturer lecturer = lecturerRepository.findById(lecturerId)
@@ -216,6 +219,8 @@ public class CourseService {
             throw new BadRequestException(
                     "Lecturer with id " + lecturerId + " is already assigned to course " + courseId);
         }
+
+        //adding the lecturer
         course.addLecturer(lecturer);
         return CourseDTO.fromEntity(courseRepository.save(course));
     }
@@ -234,6 +239,7 @@ public class CourseService {
      */
     @Transactional
     public CourseDTO removeLecturerFromCourse(Long courseId, Long lecturerId) {
+        //Safety checks
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", courseId));
         Lecturer lecturer = lecturerRepository.findById(lecturerId)
@@ -242,6 +248,8 @@ public class CourseService {
         if (!course.getLecturers().contains(lecturer)) {
             throw new BadRequestException("Lecturer with id " + lecturerId + " is not assigned to course " + courseId);
         }
+
+        //removing the lectuere
         course.removeLecturer(lecturer);
         lecturerRepository.save(lecturer);
         return CourseDTO.fromEntity(courseRepository.save(course));

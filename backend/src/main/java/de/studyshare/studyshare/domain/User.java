@@ -54,6 +54,7 @@ public class User {
     /**
      * User's email address.
      * Must be a valid email format and unique in the system.
+     * Gets stored in lowercase only
      */
     @NotBlank(message = "Email cannot be blank")
     @Email(message = "Email should be valid")

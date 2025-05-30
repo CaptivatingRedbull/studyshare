@@ -80,9 +80,8 @@ public class TokenBlocklistService {
             return false; // Cannot determine if blocklisted without JTI
         } catch (Exception e) {
             // If token is malformed or JTI cannot be extracted, treat as potentially risky
-            // or handle error
             logger.warn("Could not extract JTI for blocklist check, token might be invalid: {}", e.getMessage());
-            return true; // Or false, depending on security policy for unparseable tokens
+            return true; 
         }
     }
 

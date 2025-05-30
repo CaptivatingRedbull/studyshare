@@ -118,6 +118,8 @@ public class ReviewService {
         review.setComment(createRequest.comment());
 
         Review savedReview = reviewRepository.save(review);
+        
+        //calling update avg rating to keep it uptodate 
         updateContentAverageRating(contentId);
         return ReviewDTO.fromEntity(savedReview);
     }
@@ -157,6 +159,8 @@ public class ReviewService {
         }
 
         Review updatedReview = reviewRepository.save(review);
+
+        //calling update avg rating to keep it uptodate 
         updateContentAverageRating(review.getContent().getId());
         return ReviewDTO.fromEntity(updatedReview);
     }
