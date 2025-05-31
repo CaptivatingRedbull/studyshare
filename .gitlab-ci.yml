@@ -72,6 +72,7 @@ deploy_environment:
       artifacts: false
   before_script:
     # Install utilities for health checks and MinIO client
+    - echo "==> MARIADB_ROOT_PASSWORD_CI is '${MARIADB_ROOT_PASSWORD_CI:-<undefined>}'" 
     - apk add --no-cache curl netcat-openbsd wget bash
     - echo "Waiting for MariaDB (${MARIADB_ALIAS}) to be ready..."
     - timeout 60 sh -c 'until nc -z -w 2 ${MARIADB_ALIAS} 3306; do echo -n "."; sleep 2; done; echo' || (echo "MariaDB timed out." && exit 1)
