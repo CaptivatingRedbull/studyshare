@@ -1,11 +1,9 @@
-# .gitlab-ci.yml
-
 stages:
   - deploy
 
 deploy_studyshare_stack:
   stage: deploy
-  image: docker/compose:latest # Uses an image that has docker-compose pre-installed
+  image: docker:latest # Uses an image that has docker-compose pre-installed
   tags:
     - docker-compose # Make sure this tag matches the tag you assigned to your GitLab Runner
 
@@ -14,12 +12,7 @@ deploy_studyshare_stack:
     - echo "Verifying Docker and Docker Compose versions..."
     - docker --version
     - docker-compose --version
-
-    # Ensure local Docker networks and volumes are not conflicting if running multiple times
-    # Optional: Prune unused Docker networks and volumes (be careful with this on shared systems)
-    # - docker network prune -f
-    # - docker volume prune -f
-
+    - echo "DOCKER_HOST is $DOCKER_HOST"
     - echo "Pulling latest versions of images specified with 'image:' key (e.g., mariadb, minio)..."
     - docker-compose pull
 
@@ -41,8 +34,3 @@ deploy_studyshare_stack:
     - echo "MariaDB <your-vm-ip>:3306 (from other tools/services)"
     - echo "Minio API http://<your-vm-ip>:9000 | Minio Console http://<your-vm-ip>:9001"
     - echo "Frontend http://<your-vm-ip>:5173"
-
-  # Optional: If you want to automatically tear down the stack after the job (e.g., for testing)
-  # after_script:
-  #   - echo "Bringing down the StudyShare stack..."
-  #   - docker-compose down -v --remove-orphans # The -v flag removes named volumes like mariadb_data, minio_data
