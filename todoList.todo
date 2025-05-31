@@ -1,0 +1,48 @@
+# Frontend
+
+TODO input bereinigen -> code injection verhindern -> maybe auch backend
+TODO browse seite scaling fixen bei schmaler darstellung
+TODO Content API ändern -> siehe backend
+TODO Maybe Einstellungen in user popup (untern links ecke)
+TODO Rating dialog implementieren
+TODO frontend API anpassen (rating)
+TODO gemeldete bewertingen entfernen
+
+## noch nicht erstellte seiten
+### allgemeine seiten
+TODO Settings (dialog)
+TODO Hilfe (dialog)
+TODO Contact (dialog)
+TODO Impressum ? (dialog)
+TODO Datenschutz (dialog)
+TODO Meine inhalte
+
+### Admin seiten
+TODO Gemeldete Inhalte 
+TODO User Verwalten
+TODO Kursstruktur verwalten
+
+# Backend
+TODO Tests für logout -> token invalidation
+TODO umlaute sonderzeichen bei Titel verhalten betrachten und übergabe an dateinamen anschauen
+
+# CI/CD 
+TODO herausfinden wie man automatisch optionen wie localhost von erlaubten ips entfernt etc.
+TODO gitlab cicd updaten
+
+#Präsentation
+Themen:
+    - (frontend)
+    - Backend
+        - Datenbankanbindung -> plugin von mariadb?  NOCH MACHEN TODO 
+        - Testcases vorstellen:
+            - was mit file upload -> interessanter
+            - was mit pageable -> filer -> interessanter
+        - File upload
+        - pageable
+        - token invalidation
+    - CI/CD
+
+Morgen:
+    - CI/CD
+    - Präsentation machen

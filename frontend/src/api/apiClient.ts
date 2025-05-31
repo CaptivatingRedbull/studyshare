@@ -1,28 +1,51 @@
 import axios, { type AxiosRequestConfig, type AxiosInstance } from "axios";
 
-// Retrieve the API base URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 if (!API_BASE_URL) {
   console.error("VITE_API_URL is not defined. Please check your .env file.");
 }
 
-/**
- * Creates an Axios instance with a base URL.
- */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
 });
 
-/**
- * Returns the Axios request configuration with the JWT token in the Authorization header.
- * @returns {AxiosRequestConfig} Axios request configuration.
- */
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = sessionStorage.getItem("jwt");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Conditionally set Content-Type
+    // If config.data is FormData, Axios will set the correct multipart Content-Type with boundary
+    // Otherwise, for typical JSON payloads, set it to application/json
+    if (!(config.data instanceof FormData)) {
+      config.headers["Content-Type"] = "application/json";
+    }
+    // If it IS FormData, let Axios handle the Content-Type.
+    // You might even want to explicitly delete it if it was set by default elsewhere:
+    // else {
+    //   delete config.headers["Content-Type"];
+    // }
+
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// The getAxiosConfig function might also need similar conditional logic if used directly
+// For now, the interceptor is the primary concern for calls made via apiClient.post, .get etc.
 export const getAxiosConfig = (): AxiosRequestConfig => {
   const token = sessionStorage.getItem("jwt");
   const config: AxiosRequestConfig = {
     headers: {
-      "Content-Type": "application/json",
+      // Default Content-Type can be application/json here for general use,
+      // but for FormData, it should be omitted or handled by Axios.
+      // "Content-Type": "application/json", // Consider removing or making conditional
     },
   };
   if (token) {
@@ -35,34 +58,14 @@ export const getAxiosConfig = (): AxiosRequestConfig => {
   return config;
 };
 
-/**
- * Configures an interceptor to automatically add the JWT token to requests.
- * Also handles 401 errors globally by redirecting to login.
- */
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = sessionStorage.getItem("jwt");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    config.headers["Content-Type"] = "application/json";
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
+// Rest of your interceptors (response) can remain the same
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Token might be invalid or expired
       sessionStorage.removeItem("jwt");
-      // Redirect to login page, or show a modal, etc.
-      // Ensure this doesn't cause redirect loops if the login page itself makes API calls.
       if (window.location.pathname !== "/login") {
-         // window.location.href = "/login";
          console.warn("Unauthorized request or token expired. Redirecting to login is typically handled by the application's routing logic based on auth state.");
       }
     }

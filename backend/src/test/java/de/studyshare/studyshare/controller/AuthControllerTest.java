@@ -16,13 +16,15 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 
+import de.studyshare.studyshare.AbstractDatabaseIntegrationTest;
+import de.studyshare.studyshare.dto.entity.LecturerDTO;
 import de.studyshare.studyshare.dto.request.LoginRequest;
 import de.studyshare.studyshare.dto.request.RegisterRequest;
 import de.studyshare.studyshare.dto.response.LoginResponse;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.profiles.active=test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-class AuthControllerTest {
+class AuthControllerTest extends AbstractDatabaseIntegrationTest{
 
     @LocalServerPort
     private int port;
@@ -172,5 +174,43 @@ class AuthControllerTest {
             baseUrl() + "/register", HttpMethod.POST, entity, String.class);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    @DisplayName("Should not authenticate with invalid token")
+    void request_invalidToken(){
+        RegisterRequest registerReq = new RegisterRequest(
+            "Test",
+            "User",
+            "testuser@example.com",
+            "testuser",
+            "password"
+        );
+        restTemplate.exchange(baseUrl() + "/register", HttpMethod.POST, new HttpEntity<>(registerReq, jsonHeaders()), LoginResponse.class);
+
+        LoginRequest loginReq = new LoginRequest(registerReq.username(), registerReq.password());
+        HttpEntity<LoginRequest> entity = new HttpEntity<>(loginReq, jsonHeaders());
+
+        ResponseEntity<LoginResponse> resp = restTemplate.exchange(
+            baseUrl() + "/login", HttpMethod.POST, entity, LoginResponse.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(resp.getBody()).isNotNull();
+        assertThat(resp.getBody().token()).isNotBlank();
+
+        String token = resp.getBody().token();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<?> logoutResp = restTemplate.exchange(
+            baseUrl() + "/logout", HttpMethod.POST, new HttpEntity<>(null, headers), Void.class);
+        assertThat(logoutResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<LecturerDTO[]> invalidTokenResp = restTemplate.exchange(
+            "http://localhost:" + port + "/api/lecturers", HttpMethod.GET, new HttpEntity<>(null, jsonHeaders()), LecturerDTO[].class);
+        assertThat(invalidTokenResp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
     }
 }

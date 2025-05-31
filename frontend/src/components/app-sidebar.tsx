@@ -28,13 +28,13 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
+  SidebarMenuItem, 
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/AuthContext";
 
-import { SearchForm } from "./search-form";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
+
 const data = {
   navSecondary: [
     {
@@ -122,15 +122,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+      <SidebarHeader> 
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between w-full">
               <SidebarMenuButton
                 asChild
                 className="data-[slot=sidebar-menu-button]:!p-1.5"
               >
-                <a href="/exchange">
+                <a href="/exchange" className="flex items-center gap-2">
                   <IconCloudShare className="!size-5" />
                   <span className="text-base font-semibold">StudyShare</span>
                 </a>
@@ -141,7 +141,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
-        <SearchForm />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={NavProvider()} />

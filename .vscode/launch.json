@@ -7,8 +7,16 @@
             "cwd": "${workspaceFolder}",
             "mainClass": "de.studyshare.studyshare.StudyShareApplication",
             "projectName": "studyshare",
-            "args": "",
+            "args": "--spring.profiles.active=dev",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Debug Remote Backend (Docker)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005,
+            "projectName": "studyshare" 
         }
     ]
 }

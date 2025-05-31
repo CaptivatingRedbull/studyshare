@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 
+import de.studyshare.studyshare.AbstractDatabaseIntegrationTest;
 import de.studyshare.studyshare.domain.Role;
 import de.studyshare.studyshare.domain.User;
 import de.studyshare.studyshare.dto.entity.UserDTO;
@@ -30,7 +31,7 @@ import de.studyshare.studyshare.service.JwtUtil;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-class UserControllerTest {
+class UserControllerTest extends AbstractDatabaseIntegrationTest{
 
     @LocalServerPort
     private int port;

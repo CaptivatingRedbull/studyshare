@@ -21,6 +21,10 @@ import de.studyshare.studyshare.repository.FacultyRepository;
 import de.studyshare.studyshare.repository.LecturerRepository;
 import jakarta.transaction.Transactional;
 
+/**
+ * Service class for managing courses in the study share application.
+ * Provides methods to create, update, delete, and retrieve courses.
+ */
 @Service
 public class CourseService {
 
@@ -28,6 +32,13 @@ public class CourseService {
     private final FacultyRepository facultyRepository;
     private final LecturerRepository lecturerRepository;
 
+    /**
+     * Constructs a CourseService with the specified repositories.
+     *
+     * @param courseRepository   the repository to access course data
+     * @param facultyRepository  the repository to access faculty data
+     * @param lecturerRepository the repository to access lecturer data
+     */
     public CourseService(CourseRepository courseRepository,
             FacultyRepository facultyRepository,
             LecturerRepository lecturerRepository) {
@@ -36,6 +47,11 @@ public class CourseService {
         this.lecturerRepository = lecturerRepository;
     }
 
+    /**
+     * Retrieves all courses from the repository.
+     *
+     * @return a list of CourseDTO objects representing all courses
+     */
     @Transactional
     public List<CourseDTO> getAllCourses() {
         return courseRepository.findAll().stream()
@@ -43,6 +59,14 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves a course by its ID.
+     *
+     * @param id the ID of the course to retrieve
+     * @return a CourseDTO object representing the course
+     * @throws ResourceNotFoundException if the course with the specified ID does
+     *                                   not exist
+     */
     @Transactional
     public CourseDTO getCourseById(Long id) {
         return courseRepository.findById(id)
@@ -50,19 +74,32 @@ public class CourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", id));
     }
 
+    /**
+     * Creates a new course with the specified details.
+     *
+     * @param createRequest the request object containing course creation details
+     * @return a CourseDTO object representing the created course
+     * @throws ResourceNotFoundException  if the faculty with the specified ID does
+     *                                    not exist
+     * @throws DuplicateResourceException if a course with the same name already
+     *                                    exists in the faculty
+     */
     @Transactional
     public CourseDTO createCourse(CourseCreateRequest createRequest) {
+        //Safety checks
         Faculty faculty = facultyRepository.findById(createRequest.facultyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", createRequest.facultyId()));
 
         if (courseRepository.existsByNameAndFaculty(createRequest.name(), faculty)) {
-            throw new DuplicateResourceException("Course with name '" + createRequest.name() + "' already exists in faculty '" + faculty.getName() + "'.");
+            throw new DuplicateResourceException("Course with name '" + createRequest.name()
+                    + "' already exists in faculty '" + faculty.getName() + "'.");
         }
 
         Course course = new Course();
         course.setName(createRequest.name());
         course.setFaculty(faculty);
 
+        //adding lecturers to the course (if they are defined in the request)
         if (createRequest.lecturerIds() != null && !createRequest.lecturerIds().isEmpty()) {
             Set<Lecturer> lecturers = new HashSet<>(lecturerRepository.findAllById(createRequest.lecturerIds()));
             if (lecturers.size() != createRequest.lecturerIds().size()) {
@@ -76,38 +113,53 @@ public class CourseService {
         return CourseDTO.fromEntity(savedCourse);
     }
 
+    /**
+     * Updates an existing course with the specified details.
+     *
+     * @param id            the ID of the course to update
+     * @param updateRequest the request object containing course update details
+     * @return a CourseDTO object representing the updated course
+     * @throws ResourceNotFoundException  if the course or faculty with the
+     *                                    specified IDs do not exist
+     * @throws DuplicateResourceException if a course with the same name already
+     *                                    exists in the faculty
+     */
     @Transactional
     public CourseDTO updateCourse(Long id, CourseUpdateRequest updateRequest) {
+        //Safety checks
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", id));
 
+        //setting the Name
         if (updateRequest.name() != null) {
+            Faculty facultyToCheck = facultyRepository.findById(updateRequest.facultyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", updateRequest.facultyId()));
 
-            Faculty facultyToCheck = (updateRequest.facultyId() != null)
-                    ? facultyRepository.findById(updateRequest.facultyId())
-                            .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", updateRequest.facultyId()))
-                    : course.getFaculty();
-
-            if (!course.getName().equals(updateRequest.name()) || (updateRequest.facultyId() != null && !course.getFaculty().getId().equals(updateRequest.facultyId()))) {
+            if (!course.getName().equals(updateRequest.name()) || (updateRequest.facultyId() != null
+                    && !course.getFaculty().getId().equals(updateRequest.facultyId()))) {
                 if (courseRepository.existsByNameAndFacultyAndIdNot(updateRequest.name(), facultyToCheck, id)) {
-                    throw new DuplicateResourceException("Course with name '" + updateRequest.name() + "' already exists in faculty '" + facultyToCheck.getName() + "'.");
+                    throw new DuplicateResourceException("Course with name '" + updateRequest.name()
+                            + "' already exists in faculty '" + facultyToCheck.getName() + "'.");
                 }
             }
             course.setName(updateRequest.name());
         }
 
+        //setting the Faculty
         if (updateRequest.facultyId() != null && !course.getFaculty().getId().equals(updateRequest.facultyId())) {
             Faculty newFaculty = facultyRepository.findById(updateRequest.facultyId())
                     .orElseThrow(() -> new ResourceNotFoundException("Faculty", "id", updateRequest.facultyId()));
             course.setFaculty(newFaculty);
         }
 
+        //setting the Lecturers
         if (updateRequest.lecturerIds() != null) {
             Set<Lecturer> newLecturers = new HashSet<>();
             if (!updateRequest.lecturerIds().isEmpty()) {
                 newLecturers.addAll(lecturerRepository.findAllById(updateRequest.lecturerIds()));
                 if (newLecturers.size() != updateRequest.lecturerIds().size()) {
-                    throw new ResourceNotFoundException("One or more lecturers not found for the provided IDs during update.");
+                    throw new ResourceNotFoundException(
+                            "One or more lecturers not found for the provided IDs during update.");
                 }
             }
 
@@ -127,6 +179,13 @@ public class CourseService {
         return CourseDTO.fromEntity(updatedCourse);
     }
 
+    /**
+     * Deletes a course by its ID.
+     *
+     * @param id the ID of the course to delete
+     * @throws ResourceNotFoundException if the course with the specified ID does
+     *                                   not exist
+     */
     @Transactional
     public void deleteCourse(Long id) {
         Course course = courseRepository.findById(id)
@@ -137,22 +196,50 @@ public class CourseService {
         courseRepository.delete(course);
     }
 
+    /**
+     * Adds a lecturer to a course.
+     *
+     * @param courseId   the ID of the course to which the lecturer will be added
+     * @param lecturerId the ID of the lecturer to add
+     * @return a CourseDTO object representing the updated course
+     * @throws ResourceNotFoundException if the course or lecturer with the
+     *                                   specified IDs do not exist
+     * @throws BadRequestException       if the lecturer is already assigned to the
+     *                                   course
+     */
     @Transactional
     public CourseDTO addLecturerToCourse(Long courseId, Long lecturerId) {
+        //Safety checks
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", courseId));
         Lecturer lecturer = lecturerRepository.findById(lecturerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lecturer", "id", lecturerId));
 
         if (course.getLecturers().contains(lecturer)) {
-            throw new BadRequestException("Lecturer with id " + lecturerId + " is already assigned to course " + courseId);
+            throw new BadRequestException(
+                    "Lecturer with id " + lecturerId + " is already assigned to course " + courseId);
         }
+
+        //adding the lecturer
         course.addLecturer(lecturer);
         return CourseDTO.fromEntity(courseRepository.save(course));
     }
 
+    /**
+     * Removes a lecturer from a course.
+     *
+     * @param courseId   the ID of the course from which the lecturer will be
+     *                   removed
+     * @param lecturerId the ID of the lecturer to remove
+     * @return a CourseDTO object representing the updated course
+     * @throws ResourceNotFoundException if the course or lecturer with the
+     *                                   specified IDs do not exist
+     * @throws BadRequestException       if the lecturer is not assigned to the
+     *                                   course
+     */
     @Transactional
     public CourseDTO removeLecturerFromCourse(Long courseId, Long lecturerId) {
+        //Safety checks
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course", "id", courseId));
         Lecturer lecturer = lecturerRepository.findById(lecturerId)
@@ -161,6 +248,8 @@ public class CourseService {
         if (!course.getLecturers().contains(lecturer)) {
             throw new BadRequestException("Lecturer with id " + lecturerId + " is not assigned to course " + courseId);
         }
+
+        //removing the lectuere
         course.removeLecturer(lecturer);
         lecturerRepository.save(lecturer);
         return CourseDTO.fromEntity(courseRepository.save(course));

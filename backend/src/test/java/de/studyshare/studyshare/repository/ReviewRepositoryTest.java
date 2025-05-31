@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import de.studyshare.studyshare.AbstractDatabaseIntegrationTest;
 import de.studyshare.studyshare.domain.Content;
 import de.studyshare.studyshare.domain.ContentCategory;
 import de.studyshare.studyshare.domain.Review;
@@ -22,7 +23,7 @@ import de.studyshare.studyshare.domain.Role;
 import de.studyshare.studyshare.domain.User;
 
 @DataJpaTest
-public class ReviewRepositoryTest {
+public class ReviewRepositoryTest extends AbstractDatabaseIntegrationTest{
 
     @Autowired
     private TestEntityManager entityManager;

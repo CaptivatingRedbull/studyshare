@@ -20,12 +20,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import de.studyshare.studyshare.AbstractDatabaseIntegrationTest;
 import de.studyshare.studyshare.domain.Course;
 import de.studyshare.studyshare.domain.Faculty;
 import de.studyshare.studyshare.domain.Lecturer;
 
 @DataJpaTest
-public class LecturerRepositoryTest {
+public class LecturerRepositoryTest extends AbstractDatabaseIntegrationTest{
 
     @Autowired
     private LecturerRepository lecturerRepository;

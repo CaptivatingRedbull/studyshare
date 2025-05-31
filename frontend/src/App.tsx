@@ -1,57 +1,39 @@
-import { Routes, Route, Navigate, Outlet, Link } from "react-router-dom";
-import "./App.css";
-import { LandingPage } from "./pages/LandingPage";
-import { dashboard } from "./dashboard"; // ggf. Pfad anpassen
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import "@/App.css";
+import { LandingPage } from "@/pages/LandingPage";
+import { BrowsePage } from "@/pages/BrowsePage";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarInset, SidebarProvider } from "./components/ui/sidebar";
 
-// Layouts
-function PublicLayout() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <Outlet />
-    </div>
-  );
+function DashboardLayout() {
+    return (
+        <div className="flex h-screen bg-background">
+            <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset>
+                    <div className="overflow-y-auto h-full">
+                        <Outlet />
+                    </div>
+                </SidebarInset>
+            </SidebarProvider>
+        </div>
+    );
 }
-
-function ProtectedLayout() {
-  return (
-    <div className="min-h-screen">
-      <header className="p-4 border-b">
-        <Link to="/">Home</Link> | <Link to="/exchange">Exchange</Link>
-      </header>
-      <main className="p-4">
-        <Outlet />
-      </main>
-    </div>
-  );
-}
-
-function RegisterPage() {
-  return <div>Registration Form Here</div>;
-}
-
-
-
-function ExchangePage() {
-  return dashboard();
-}
-
 
 export function App() {
-  return (
-    <Routes>
-      {/* Public */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-      </Route>
+    return (
+        <Routes>
+            {/* Public */}
+            <Route path="/" element={<LandingPage />} />
 
-      {/* Main app */}
-      <Route element={<ProtectedLayout />}>
-        <Route path="/exchange" element={<ExchangePage />} />
-      </Route>
+            {/* Main app */}
+            <Route path="/exchange" element={<DashboardLayout />}>
+                <Route index element={<BrowsePage />} /> {/* Or some other default dashboard page */}
+                <Route path="browse" element={<BrowsePage />} />
+            </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+    );
 }

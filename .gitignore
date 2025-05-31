@@ -52,4 +52,5 @@ sketch
 
 # Exclude Database volume
 db/
+**/.DS_Store
 .DS_Store
