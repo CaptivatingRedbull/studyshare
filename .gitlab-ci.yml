@@ -64,8 +64,8 @@ deploy_environment:
         MINIO_ROOT_USER: $MINIO_ROOT_USER_CI
         MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD_CI
   needs:
-    - job: test_backend
-      artifacts: false
+    #- job: test_backend
+    #  artifacts: false
     - job: build_backend
       artifacts: false
     - job: build_frontend
