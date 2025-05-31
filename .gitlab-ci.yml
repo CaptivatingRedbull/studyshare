@@ -13,6 +13,8 @@ variables:
   MARIADB_ALIAS: ci-mariadb
   MINIO_ALIAS: ci-minio
   CI_MINIO_BUCKET: "studyshare-ci-uploads"
+  NO_PROXY: "localhost,127.0.0.1,172.17.0.1,172.17.0.0/16,ci-mariadb,ci-minio"
+  no_proxy: "$NO_PROXY"
 
 
 test_backend:
