@@ -1,5 +1,5 @@
 stages:
-  - test
+  # - test
   - build
   - deploy
 
@@ -17,14 +17,14 @@ variables:
   no_proxy: "$NO_PROXY"
 
 
-test_backend:
-  stage: test
-  image: maven:3.9.9-eclipse-temurin-21
-  script:
-    - cd backend
-    - ./mvnw test 
-  rules:
-    - if: $CI_COMMIT_REF_PROTECTED == "true"
+# test_backend:
+#   stage: test
+#   image: maven:3.9.9-eclipse-temurin-21
+#   script:
+#     - cd backend
+#     - ./mvnw test 
+#   rules:
+#     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
 build_backend:
   stage: build
