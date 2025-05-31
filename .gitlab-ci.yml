@@ -113,7 +113,7 @@ deploy_environment:
     - docker rm -f ${DOCKER_IMAGE_PREFIX}-frontend-deploy || true
     - >
       docker run -d --name ${DOCKER_IMAGE_PREFIX}-frontend-deploy
-      -p 5173:80 # Assuming frontend Nginx serves on port 80
+      -p 5173:80
       ${DOCKER_IMAGE_PREFIX}-frontend:$CI_COMMIT_REF_SLUG
     - docker ps -f name=${DOCKER_IMAGE_PREFIX}-frontend-deploy
   rules:
