@@ -7,12 +7,16 @@ services:
     container_name: studyshare-backend-local
     ports:
       - "8080:8080" 
-      - "5005:5005" # For remote debugging
     environment:
-      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 # For remote debugging
-      - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/studyshare_db
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/studyshare_db?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
       - SPRING_DATASOURCE_USERNAME=studyshare_user
       - SPRING_DATASOURCE_PASSWORD=12EKA-02dD26oC1_2aA)
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=root
+      - S3_SECRET_KEY=Qi0YzkpG67l1
+      - S3_BUCKET_NAME=studyshare-uploads
+      - S3_REGION=us-east-1 
     volumes:
       - ./backend/target:/app/target 
     networks:

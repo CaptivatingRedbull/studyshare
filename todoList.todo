@@ -34,18 +34,7 @@ TODO gitlab cicd updaten
 Themen:
     - (frontend)
     - Backend
-        - Grundstruktur (einzelne komponenten):
-            - Backend selbst
-            - Maria DB 
-            - MinIO 
-                -> skalierbar
-                -> s3 sdk kompatibel -> leichter switchen bei theoretischem produktivgang
-
-            - frontend
-            - (monitoring software (loganalyser))
-        - Datenbankanbindung -> plugin von mariadb? 
-        - Endpoints:
-            - maybe ne map oder so erstellen
+        - Datenbankanbindung -> plugin von mariadb?  NOCH MACHEN TODO 
         - Testcases vorstellen:
             - was mit file upload -> interessanter
             - was mit pageable -> filer -> interessanter

@@ -4,21 +4,22 @@ stages:
   - deploy
 
 default:
-  image: docker:20.10.16
+  image: docker:20.10.16 # Base Docker image for jobs
   tags:
-    - docker
+    - docker # Runner tag
 variables:
-  DOCKER_HOST: "unix:///var/run/docker.sock"
-  HTTP_PROXY: "http://proxy.hof-university.de:3128"
-  HTTPS_PROXY: "http://proxy.hof-university.de:3128"
-  NO_PROXY: "localhost,127.0.0.1"
+  DOCKER_HOST: "unix:///var/run/docker.sock" # For Docker-in-Docker or Docker-enabled runners
+  DOCKER_IMAGE_PREFIX: "studyshare"
+  MARIADB_ALIAS: ci-mariadb
+  MINIO_ALIAS: ci-minio
+  CI_MINIO_BUCKET: "studyshare-ci-uploads"
 
 test_backend:
   stage: test
   image: maven:3.9.9-eclipse-temurin-21
   script:
     - cd backend
-    - ./mvnw test
+    - ./mvnw test 
   rules:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
@@ -26,9 +27,9 @@ build_backend:
   stage: build
   script:
     - docker info
-    - echo "Building backend image"
+    - echo "Building backend image..."
     - cd backend
-    - docker build -t studyshare-backend:$CI_COMMIT_REF_SLUG .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}-backend:$CI_COMMIT_REF_SLUG .
   rules:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
@@ -36,30 +37,79 @@ build_frontend:
   stage: build
   script:
     - docker info
-    - echo "Building frontend image"
+    - echo "Building frontend image..."
     - cd frontend
-    - docker build -t studyshare-frontend:$CI_COMMIT_REF_SLUG .
+    - docker build --build-arg VITE_API_URL=${VITE_API_URL_CI:-/api} -t ${DOCKER_IMAGE_PREFIX}-frontend:$CI_COMMIT_REF_SLUG .
   rules:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
-deploy_backend:
+deploy_environment: 
   stage: deploy
+  services:
+    - name: mariadb:10.11
+      alias: ${MARIADB_ALIAS}
+      command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+      variables: 
+        MARIADB_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD_CI
+        MARIADB_DATABASE: $MARIADB_DATABASE_CI
+        MARIADB_USER: $MARIADB_USER_CI
+        MARIADB_PASSWORD: $MARIADB_PASSWORD_CI
+    - name: minio/minio:latest
+      alias: ${MINIO_ALIAS}
+      command: ["server", "/data", "--console-address", ":9001"]
+      variables: # These are passed to the MinIO service container
+        MINIO_ROOT_USER: $MINIO_ROOT_USER_CI
+        MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD_CI
   needs:
-    - build_backend
+    - job: test_backend
+      artifacts: false
+    - job: build_backend
+      artifacts: false
+    - job: build_frontend
+      artifacts: false
+  before_script:
+    # Install utilities for health checks and MinIO client
+    - apk add --no-cache curl netcat-openbsd wget bash
+    - echo "Waiting for MariaDB (${MARIADB_ALIAS}) to be ready..."
+    - timeout 60 sh -c 'until nc -z -w 2 ${MARIADB_ALIAS} 3306; do echo -n "."; sleep 2; done; echo' || (echo "MariaDB timed out." && exit 1)
+    - echo "MariaDB is ready."
+    - echo "Waiting for MinIO (${MINIO_ALIAS}) to be ready..."
+    - timeout 60 sh -c 'until curl -sf http://${MINIO_ALIAS}:9000/minio/health/live > /dev/null; do echo -n "."; sleep 2; done; echo' || (echo "MinIO timed out." && exit 1)
+    - echo "MinIO is ready."
+    # Setup MinIO client (mc) and create bucket
+    - wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
+    - chmod +x /usr/local/bin/mc
+    - mc alias set ci_minio http://${MINIO_ALIAS}:9000 $MINIO_ROOT_USER_CI $MINIO_ROOT_PASSWORD_CI
+    - mc mb ci_minio/${S3_BUCKET_NAME_CI:-$CI_MINIO_BUCKET} || echo "Bucket ${S3_BUCKET_NAME_CI:-$CI_MINIO_BUCKET} already exists or error creating it."
   script:
-    - docker rm -f studyshare-backend-deploy || true
-    - docker run -d --name studyshare-backend-deploy -p 8080:8080 studyshare-backend:$CI_COMMIT_REF_SLUG
-    - docker ps -f name=studyshare-backend-deploy
-  rules:
-    - if: $CI_COMMIT_REF_PROTECTED == "true"
+    - echo "Deploying backend application..."
+    - docker rm -f ${DOCKER_IMAGE_PREFIX}-backend-deploy || true
+    - >
+      docker run -d --name ${DOCKER_IMAGE_PREFIX}-backend-deploy
+      -p 8080:8080
+      # Environment variables for the backend application container
+      -e SPRING_DATASOURCE_URL=jdbc:mariadb://${MARIADB_ALIAS}:3306/${MARIADB_DATABASE_CI}?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
+      -e SPRING_DATASOURCE_USERNAME=$MARIADB_USER_CI
+      -e SPRING_DATASOURCE_PASSWORD=$MARIADB_PASSWORD_CI
+      -e S3_ENDPOINT=http://${MINIO_ALIAS}:9000
+      -e S3_ACCESS_KEY=$MINIO_ROOT_USER_CI # Backend uses MinIO service credentials
+      -e S3_SECRET_KEY=$MINIO_ROOT_PASSWORD_CI
+      -e S3_BUCKET_NAME=${S3_BUCKET_NAME_CI:-$CI_MINIO_BUCKET}
+      -e S3_REGION=${S3_REGION_CI:-us-east-1}
+      -e JWT_SECRET=$JWT_SECRET_CI
+      -e JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS_CI:-86400000}
+      -e SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO_CI:-update} # 'update' or 'create-drop' for CI services
+      -e SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_CI:-dev}
+      ${DOCKER_IMAGE_PREFIX}-backend:$CI_COMMIT_REF_SLUG
+    - sleep 20 # Give backend time to start and potentially create schema
+    - docker ps -f name=${DOCKER_IMAGE_PREFIX}-backend-deploy
 
-deploy_frontend:
-  stage: deploy
-  needs:
-    - build_frontend
-  script:
-    - docker rm -f studyshare-frontend-deploy || true
-    - docker run -d --name studyshare-frontend-deploy -p 5173:80 studyshare-frontend:$CI_COMMIT_REF_SLUG
-    - docker ps -f name=studyshare-frontend-deploy
+    - echo "Deploying frontend application..."
+    - docker rm -f ${DOCKER_IMAGE_PREFIX}-frontend-deploy || true
+    - >
+      docker run -d --name ${DOCKER_IMAGE_PREFIX}-frontend-deploy
+      -p 5173:80 # Assuming frontend Nginx serves on port 80
+      ${DOCKER_IMAGE_PREFIX}-frontend:$CI_COMMIT_REF_SLUG
+    - docker ps -f name=${DOCKER_IMAGE_PREFIX}-frontend-deploy
   rules:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
