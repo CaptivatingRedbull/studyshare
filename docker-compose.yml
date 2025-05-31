@@ -68,7 +68,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://localhost:8080    
+        VITE_API_URL: http://192.168.67.63:8080    
     container_name: studyshare-frontend-local
     ports:
       - "5173:80"
