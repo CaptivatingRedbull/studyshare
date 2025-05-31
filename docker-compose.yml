@@ -17,6 +17,11 @@ services:
       - S3_SECRET_KEY=Qi0YzkpG67l1
       - S3_BUCKET_NAME=studyshare-uploads
       - S3_REGION=us-east-1 
+      - PROD_USER_USERNAME=root
+      - PROD_USER_PASSWORD=i9gnhzxy2kKexwjuWdtHw7oJQDUB7t
+      - SPRING_PROFILES_ACTIVE=dev
+      - JWT_SECRET=515c5eca00fa1f93d12c06d3e1594f86e21bea5aa42feb64eb172faf7114aafc70f5193ebcc16db05da0ef71b97f9bb354d79c27c5cc13aa209a34c7305c1096
+      - JWT_EXPIRATION_MS=86400000
     volumes:
       - ./backend/target:/app/target 
     networks:
@@ -60,14 +65,15 @@ services:
   # Frontend Service (React Vite)
   frontend:
     build:
-      context: ./frontend 
-      dockerfile: Dockerfile 
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8080    
     container_name: studyshare-frontend-local
     ports:
       - "5173:80"
-    
     depends_on:
-      - backend 
+      - backend
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
