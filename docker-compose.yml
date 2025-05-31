@@ -1,12 +1,12 @@
+version: "3.8"
 services:
-  # Backend Service (Java Spring Boot)
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile 
+      dockerfile: Dockerfile
     container_name: studyshare-backend-local
     ports:
-      - "8080:8080" 
+      - 8080:8080
     environment:
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n
       - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/studyshare_db?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
@@ -16,62 +16,59 @@ services:
       - S3_ACCESS_KEY=root
       - S3_SECRET_KEY=Qi0YzkpG67l1
       - S3_BUCKET_NAME=studyshare-uploads
-      - S3_REGION=us-east-1 
+      - S3_REGION=us-east-1
       - PROD_USER_USERNAME=root
       - PROD_USER_PASSWORD=i9gnhzxy2kKexwjuWdtHw7oJQDUB7t
       - SPRING_PROFILES_ACTIVE=dev
       - JWT_SECRET=515c5eca00fa1f93d12c06d3e1594f86e21bea5aa42feb64eb172faf7114aafc70f5193ebcc16db05da0ef71b97f9bb354d79c27c5cc13aa209a34c7305c1096
       - JWT_EXPIRATION_MS=86400000
     volumes:
-      - ./backend/target:/app/target 
+      - ./backend/target:/app/target
     networks:
       - studyshare-network
-
-  # Database Service (MariaDB)
   mariadb:
-    image: mariadb:10.11 
+    image: mariadb:10.11
     container_name: studyshare-mariadb
     restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: K+d36o0tFRn@
-      MARIADB_DATABASE: studyshare_db 
-      MARIADB_USER: studyshare_user 
+      MARIADB_DATABASE: studyshare_db
+      MARIADB_USER: studyshare_user
       MARIADB_PASSWORD: 12EKA-02dD26oC1_2aA)
-    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    command:
+      - mysqld
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     volumes:
       - mariadb_data:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - 3306:3306
     networks:
       - studyshare-network
-
-  # Minio Service (Object Storage)
   minio:
     image: minio/minio:latest
     container_name: studyshare-minio
     ports:
-      - "9000:9000" # API port
-      - "9001:9001" # Console port
+      - 9000:9000
+      - 9001:9001
     environment:
       MINIO_ROOT_USER: root
       MINIO_ROOT_PASSWORD: Qi0YzkpG67l1
-      MINIO_DEFAULT_BUCKETS: "studyshare-uploads"
+      MINIO_DEFAULT_BUCKETS: studyshare-uploads
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
     networks:
       - studyshare-network
-
-  # Frontend Service (React Vite)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://192.168.67.63:8080    
+        VITE_API_URL: http://192.168.67.63:8080
     container_name: studyshare-frontend-local
     ports:
-      - "5173:80"
+      - 5173:80
     depends_on:
       - backend
     volumes:
@@ -79,13 +76,10 @@ services:
       - ./frontend/public:/app/public
       - /app/node_modules
     networks:
-      - studyshare-network 
-
-
+      - studyshare-network
 networks:
   studyshare-network:
-    driver: bridge 
-
+    driver: bridge
 volumes:
   mariadb_data:
     driver: local
