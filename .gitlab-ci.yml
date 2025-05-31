@@ -63,8 +63,8 @@ deploy_environment:
       alias: "${MINIO_ALIAS}"
       command: ["server", "/data", "--console-address", ":9001"]
       variables: # These are passed to the MinIO service container
-        MINIO_ROOT_USER: "$MINIO_ROOT_USER_CI"
-        MINIO_ROOT_PASSWORD: "$MINIO_ROOT_PASSWORD_CI"
+        MINIO_ROOT_USER:     "minioadmin"
+        MINIO_ROOT_PASSWORD: "minioadmin"
   needs:
     #- job: test_backend
     #  artifacts: false 
