@@ -93,7 +93,7 @@ deploy_environment:
     - >
       docker run -d --name ${DOCKER_IMAGE_PREFIX}-backend-deploy
       -p 8080:8080
-      -e SPRING_DATASOURCE_URL=jdbc:mariadb://${MARIADB_ALIAS}:3306/${MARIADB_DATABASE_CI}?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
+      -e "SPRING_DATASOURCE_URL=jdbc:mariadb://${MARIADB_ALIAS}:3306/${MARIADB_DATABASE_CI}?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci"
       -e SPRING_DATASOURCE_USERNAME=$MARIADB_USER_CI
       -e SPRING_DATASOURCE_PASSWORD=$MARIADB_PASSWORD_CI
       -e S3_ENDPOINT=http://${MINIO_ALIAS}:9000
