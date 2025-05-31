@@ -60,11 +60,11 @@ deploy_environment:
         MARIADB_PASSWORD: "$MARIADB_PASSWORD_CI"
     
     - name: minio/minio:latest
-      alias: ${MINIO_ALIAS}
+      alias: "${MINIO_ALIAS}"
       command: ["server", "/data", "--console-address", ":9001"]
       variables: # These are passed to the MinIO service container
-        MINIO_ROOT_USER: $MINIO_ROOT_USER_CI
-        MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD_CI
+        MINIO_ROOT_USER: "$MINIO_ROOT_USER_CI"
+        MINIO_ROOT_PASSWORD: "$MINIO_ROOT_PASSWORD_CI"
   needs:
     #- job: test_backend
     #  artifacts: false 
