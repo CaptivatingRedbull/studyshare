@@ -85,7 +85,7 @@ deploy_environment:
     # Setup MinIO client (mc) and create bucket
     - wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
     - chmod +x /usr/local/bin/mc
-    - mc alias set ci_minio http://${MINIO_ALIAS}:9000 $MINIO_ROOT_USER_CI $MINIO_ROOT_PASSWORD_CI
+    - mc alias set ci_minio http://${MINIO_ALIAS}:9000 minioadmin minioadmin
     - mc mb ci_minio/${S3_BUCKET_NAME_CI:-$CI_MINIO_BUCKET} || echo "Bucket ${S3_BUCKET_NAME_CI:-$CI_MINIO_BUCKET} already exists or error creating it."
   script:
     - echo "Deploying backend application..."
