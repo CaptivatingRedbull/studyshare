@@ -46,8 +46,5 @@ deploy_studyshare_stack:
     - echo "MariaDB <your-vm-ip>:3306 (from other tools/services)"
     - echo "Minio API http://<your-vm-ip>:9000 | Minio Console http://<your-vm-ip>:9001"
     - echo "Frontend http://<your-vm-ip>:5173"
-
-  # Optional: If you want to automatically tear down the stack after the job (e.g., for testing)
-  # after_script:
-  #   - echo "Bringing down the StudyShare stack..."
-  #   - docker-compose down -v --remove-orphans # The -v flag removes named volumes like mariadb_data, minio_data
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
