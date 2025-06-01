@@ -6,6 +6,11 @@ deploy_studyshare_stack:
   image: docker:latest # Uses an image that has docker-compose pre-installed
   tags:
     - docker-compose # Make sure this tag matches the tag you assigned to your GitLab Runner
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    HTTP_PROXY: "http://proxy.hof-university.de:3128"
+    HTTPS_PROXY: "http://proxy.hof-university.de:3128"
+    NO_PROXY: "localhost,127.0.0.1,minio,mariadb,backend,frontend,.internal,172.16.0.0/12,192.168.0.0/16" 
 
   script:
     - echo "Host VM Time $(date)" # For debugging
@@ -34,3 +39,5 @@ deploy_studyshare_stack:
     - echo "MariaDB <your-vm-ip>:3306 (from other tools/services)"
     - echo "Minio API http://<your-vm-ip>:9000 | Minio Console http://<your-vm-ip>:9001"
     - echo "Frontend http://<your-vm-ip>:5173"
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
