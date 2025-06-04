@@ -209,7 +209,7 @@ class AuthControllerTest extends AbstractDatabaseIntegrationTest{
         assertThat(logoutResp.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ResponseEntity<LecturerDTO[]> invalidTokenResp = restTemplate.exchange(
-            "http://localhost:" + port + "/api/lecturers", HttpMethod.GET, new HttpEntity<>(null, jsonHeaders()), LecturerDTO[].class);
+            "http://localhost:" + port + "/api/lecturers", HttpMethod.GET, new HttpEntity<>(null, headers), LecturerDTO[].class);
         assertThat(invalidTokenResp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
     }

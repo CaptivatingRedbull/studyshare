@@ -1,3 +1,3 @@
 # StudyShare
  
- Eine Plattform zum Austauschen von Studumsunterlagen.
+ Eine Plattform zum Austauschen von Studienunterlagen.

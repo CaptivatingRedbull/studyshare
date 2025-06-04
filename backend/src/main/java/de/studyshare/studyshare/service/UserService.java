@@ -223,7 +223,11 @@ public class UserService {
         Specification<User> spec = UserSpecifications.filterBy(
                 username, email, firstName, lastName, role);
 
-        Sort sort = Sort.by(Sort.Direction.ASC, "username");
+        Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("desc"))
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Sort sort = Sort.by(direction, "username");
 
         PageRequest pageRequest = PageRequest.of(
                 pageable.getPageNumber(),

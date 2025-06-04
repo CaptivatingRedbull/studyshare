@@ -83,9 +83,9 @@ public class ContentService {
     }
 
     /**
-     * Returns the root location for file uploads.
+     * Retrieves all contents from the repository.
      *
-     * @return the root location as a Path object
+     * @return a list of ContentDTOs representing all contents
      */
     @Transactional
     public List<ContentDTO> getAllContents() {

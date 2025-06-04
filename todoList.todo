@@ -23,7 +23,6 @@ TODO User Verwalten
 TODO Kursstruktur verwalten
 
 # Backend
-TODO Tests für logout -> token invalidation
 TODO umlaute sonderzeichen bei Titel verhalten betrachten und übergabe an dateinamen anschauen
 
 # CI/CD 

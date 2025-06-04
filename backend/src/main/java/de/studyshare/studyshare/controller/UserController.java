@@ -69,13 +69,13 @@ public class UserController {
 
     @GetMapping("/browse")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Page<UserDTO>> browseContents(
+    public ResponseEntity<Page<UserDTO>> browseUsers(
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String firstName,
             @RequestParam(required = false) String lastName,
             @RequestParam(required = false) Role role,
-            @RequestParam(required = false, defaultValue = "acs") String sortDirection,
+            @RequestParam(required = false, defaultValue = "asc") String sortDirection,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "20") int size) {
 
